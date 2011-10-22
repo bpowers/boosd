@@ -3,7 +3,8 @@ include $(GOROOT)/src/Make.inc
 TARG = calc
 
 GOFILES = \
-	calc.go
+	lex.go\
+	calc.go\
 
 CLEANFILES += \
 	calc.go\

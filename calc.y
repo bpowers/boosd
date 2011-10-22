@@ -12,10 +12,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"unicode"
 )
 
-var regs = make([]int, 26)
+var regs = map[string]int{}
 var base int
 
 %}
@@ -23,15 +22,18 @@ var base int
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
-	val int
+	kind int
+	val  int
+	id   string
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-%type <val> expr number
+%type <val> expr
 
 // same for terminals
-%token <val> DIGIT LETTER
+%token <val> NUMBER
+%token <id> IDENTIFIER
 
 %left '|'
 %left '&'
@@ -49,7 +51,7 @@ stat	:    expr
 		{
 			fmt.Printf( "%d\n", $1 );
 		}
-	|    LETTER '=' expr
+	|    IDENTIFIER '=' expr
 		{
 			regs[$1]  =  $3
 		}
@@ -73,55 +75,12 @@ expr	:    '(' expr ')'
 		{ $$  =  $1 | $3 }
 	|    '-'  expr        %prec  UMINUS
 		{ $$  = -$2  }
-	|    LETTER
+	|    IDENTIFIER
 		{ $$  = regs[$1] }
-	|    number
-	;
-
-number	:    DIGIT
-		{
-			$$ = $1;
-			if $1==0 {
-				base = 8
-			} else {
-				base = 10
-			}
-		}
-	|    number DIGIT
-		{ $$ = base * $1 + $2 }
+	|    NUMBER
 	;
 
 %%      /*  start  of  programs  */
-
-type CalcLex struct {
-	s string
-	pos int
-}
-
-
-func (l *CalcLex) Lex(lval *CalcSymType) int {
-	var c int = ' '
-	for c == ' ' {
-		if l.pos == len(l.s) {
-			return 0
-		}
-		c = int(l.s[l.pos])
-		l.pos += 1
-	}
-
-	if unicode.IsDigit(c) {
-		lval.val = c - '0'
-		return DIGIT
-	} else if unicode.IsLower(c) {
-		lval.val = c - 'a'
-		return LETTER
-	}
-	return c
-}
-
-func (l *CalcLex) Error(s string) {
-	fmt.Printf("syntax error: %s\n", s)
-}
 
 func main() {
 	fi := bufio.NewReader(os.NewFile(0, "stdin"))
@@ -132,7 +91,7 @@ func main() {
 
 		fmt.Printf("equation: ")
 		if eqn, ok = readline(fi); ok {
-			CalcParse(&CalcLex{s: eqn})
+			CalcParse(NewCalcLex(eqn))
 		} else {
 			break
 		}
