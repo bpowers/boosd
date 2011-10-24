@@ -19,6 +19,8 @@ var base int
 
 %}
 
+
+
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
@@ -43,9 +45,10 @@ var base int
 
 %%
 
-list	: /* empty */
-	| list stat '\n'
+list	:
+	|    list stat '\n'
 	;
+
 
 stat	:    expr
 		{
@@ -82,6 +85,10 @@ expr	:    '(' expr ')'
 
 %%      /*  start  of  programs  */
 
+func Parse(eqn string) int {
+	return calcParse(newCalcLex(eqn))
+}
+
 func main() {
 	fi := bufio.NewReader(os.NewFile(0, "stdin"))
 
@@ -91,7 +98,7 @@ func main() {
 
 		fmt.Printf("equation: ")
 		if eqn, ok = readline(fi); ok {
-			CalcParse(NewCalcLex(eqn))
+			Parse(eqn)
 		} else {
 			break
 		}

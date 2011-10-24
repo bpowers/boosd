@@ -9,7 +9,15 @@ import (
 	"utf8"
 )
 
-const eof int = 0
+type itemType int
+
+const eof = 0
+
+const (
+	itemEOF        itemType = iota
+	itemIdentifier
+	itemNumber
+)
 
 type stateFn func (*calcLex) stateFn
 
@@ -18,11 +26,11 @@ type calcLex struct {
 	pos   int              // current position in the input
 	start int              // start of this token
 	width int              // width of the last rune
-	items chan CalcSymType // channel of scanned items
+	items chan calcSymType // channel of scanned items
 	state stateFn
 }
 
-func (l *calcLex) Lex(lval *CalcSymType) int {
+func (l *calcLex) Lex(lval *calcSymType) int {
 	for {
 		select {
 		case item := <-l.items:
@@ -35,10 +43,10 @@ func (l *calcLex) Lex(lval *CalcSymType) int {
 	panic("unreachable")
 }
 
-func NewCalcLex(input string) CalcLexer {
+func newCalcLex(input string) calcLexer {
 	return &calcLex{
 		s:     input,
-		items: make(chan CalcSymType, 2),
+		items: make(chan calcSymType, 2),
 		state: lexStatement,
 	}
 }
@@ -86,7 +94,7 @@ func (l *calcLex) acceptRun(valid string) {
 }
 
 func (l *calcLex) emit(t int) {
-	item := CalcSymType{kind: t, id:l.s[l.start:l.pos]}
+	item := calcSymType{kind: t, id:l.s[l.start:l.pos]}
 	if t == NUMBER {
 		item.val, _ = strconv.Atoi(item.id)
 	}
