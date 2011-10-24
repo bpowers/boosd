@@ -17,4 +17,4 @@ gofmt:
 	gofmt -w $(GOFILES)
 
 calc.go: calc.y
-	goyacc -o $@ -p calc $<
+	goyacc -o $@ -p calc $< && gofmt -w $@

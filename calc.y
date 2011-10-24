@@ -45,7 +45,7 @@ var base int
 
 %%
 
-list	:
+list	:    '\n'
 	|    list stat '\n'
 	;
 
