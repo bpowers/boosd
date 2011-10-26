@@ -28,18 +28,23 @@ import (
 	ids   []string
 	cu    compilationUnit
 	str   string
+	mdl   mdl
+	models []mdl
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
 %type <kind>  kind
 %type <kinds> kinds
-%type <ids>   ids imports
+%type <ids>   ids imports callable
 %type <cu>    file
 %type <str>   pkg import
+%type <mdl>   def
+%type <models> defs
 
 // same for terminals
-%token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE
+%token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE MODEL
+%token <tok> CALLABLE
 
 %left '|'
 %left '&'
@@ -57,6 +62,7 @@ file:	pkg
 			pkgName: $1,
 			imports: $2,
 			kinds: $3,
+			models: $4,
 		}
 	}
 ;
@@ -107,7 +113,29 @@ ids:	ID
 		$$ = append($1, $3.val)
 	}
 
-defs:	{}
+defs:
+{
+}
+|	defs def
+	{
+		$$ = append($1, $2)
+	}
+;
+
+def:	MODEL ID callable '{' stmts '}' ';'
+	{
+		$$.sig = $3
+	}
+;
+
+callable: {}
+|	CALLABLE '(' ids ')'
+	{
+		$$ = $3
+	}
+;
+
+stmts:	{}
 ;
 
 %% /* start of programs */

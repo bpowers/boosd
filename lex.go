@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-//	"log"
+	"log"
 	"strings"
 	"unicode"
 	"utf8"
@@ -22,6 +22,10 @@ const (
 	itemKindDecl
 	itemKeyword
 	itemLiteral
+	itemLBracket
+	itemRBracket
+	itemLParen
+	itemRParen
 )
 
 type kind struct {
@@ -37,11 +41,16 @@ type tok struct {
 	kind   itemType
 }
 
+type mdl struct {
+	name string
+	sig  []string
+}
+
 type compilationUnit struct {
 	pkgName string
 	imports []string
 	kinds   []kind
-	models  []string
+	models  []mdl
 }
 
 type stateFn func(*boosdLex) stateFn
@@ -124,11 +133,13 @@ func (l *boosdLex) acceptRun(valid string) {
 
 func (l *boosdLex) emit(yyTy int, ty itemType) {
 	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
-//	log.Printf("t: %#v\n", t)
+	log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
 
 	switch {
+	case ty == itemRBracket || ty == itemRParen:
+		fallthrough
 	case ty == itemIdentifier || ty == itemNumber || ty == itemKindDecl || ty == itemLiteral:
 		l.semi = true
 	default:
@@ -172,10 +183,28 @@ func lexStatement(l *boosdLex) stateFn {
 		l.backup()
 		return lexIdentifier
 	case isOperator(r):
-		l.emit(r, itemOperator)
+		l.backup()
+		return lexOperator
 	default:
 		return l.errorf("unrecognized char: %#U\n", r)
 	}
+	return lexStatement
+}
+
+func lexOperator(l *boosdLex) stateFn {
+	ty := itemOperator
+	r := l.next()
+	switch {
+	case r == '{':
+		ty = itemLBracket
+	case r == '}':
+		ty = itemRBracket
+	case r == '(':
+		ty = itemLParen
+	case r == ')':
+		ty = itemRParen
+	}
+	l.emit(r, ty)
 	return lexStatement
 }
 
@@ -238,6 +267,10 @@ func lexIdentifier(l *boosdLex) stateFn {
 		l.emit(IMPORT, itemKeyword)
 	case id == "package":
 		l.emit(PACKAGE, itemKeyword)
+	case id == "model":
+		l.emit(MODEL, itemKeyword)
+	case id == "callable":
+		l.emit(CALLABLE, itemKeyword)
 	default:
 		l.emit(ID, itemIdentifier)
 	}
@@ -249,7 +282,7 @@ func isLiteralStart(r int) bool {
 }
 
 func isOperator(rune int) bool {
-	return bytes.IndexRune([]byte(",+-*/|&="), rune) > -1
+	return bytes.IndexRune([]byte(",+-*/|&=(){}"), rune) > -1
 }
 
 func isIdentifierStart(r int) bool {
