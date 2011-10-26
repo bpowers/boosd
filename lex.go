@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"strings"
 	"unicode"
 	"utf8"
@@ -14,7 +13,7 @@ type itemType int
 const eof = 0
 
 const (
-	itemEOF        itemType = iota
+	itemEOF itemType = iota
 	itemIdentifier
 	itemNumber
 	itemSemi
@@ -22,7 +21,6 @@ const (
 	itemKindDecl
 	itemKeyword
 )
-
 
 type kind struct {
 	names []string
@@ -37,14 +35,14 @@ type tok struct {
 	kind   itemType
 }
 
-type stateFn func (*calcLex) stateFn
+type stateFn func(*calcLex) stateFn
 
 type calcLex struct {
-	s     string           // the string being scanned
-	pos   int              // current position in the input
-	start int              // start of this token
-	width int              // width of the last rune
-	items chan tok         // channel of scanned items
+	s     string   // the string being scanned
+	pos   int      // current position in the input
+	start int      // start of this token
+	width int      // width of the last rune
+	items chan tok // channel of scanned items
 	state stateFn
 	semi  bool
 }
@@ -108,13 +106,14 @@ func (l *calcLex) accept(valid string) bool {
 }
 
 func (l *calcLex) acceptRun(valid string) {
-	for strings.IndexRune(valid, l.next()) >= 0 {}
+	for strings.IndexRune(valid, l.next()) >= 0 {
+	}
 	l.backup()
 }
 
 func (l *calcLex) emit(yyTy int, ty itemType) {
-	t := tok{val:l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
-	log.Printf("t: %#v\n", t)
+	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
+	//	log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
 
@@ -128,7 +127,6 @@ func (l *calcLex) emit(yyTy int, ty itemType) {
 
 func (l *calcLex) errorf(format string, args ...interface{}) stateFn {
 	fmt.Printf(format, args...)
-	log.Printf("a")
 	l.emit(eof, itemEOF)
 	return nil
 }
@@ -136,14 +134,12 @@ func (l *calcLex) errorf(format string, args ...interface{}) stateFn {
 func lexStatement(l *calcLex) stateFn {
 	switch r := l.next(); {
 	case r == eof:
-		log.Printf("b")
 		l.emit(eof, itemEOF)
 	case r == '/':
 		if l.peek() == '/' {
 			l.next()
 			return lexComment
 		}
-		log.Printf("d")
 		l.emit(r, itemOperator)
 	case r == '`':
 		return lexType
@@ -153,7 +149,7 @@ func lexStatement(l *calcLex) stateFn {
 		if r == '\n' && l.semi {
 			l.emit(';', itemSemi)
 		}
-//		log.Print("1 ignoring:", l.s[l.start:l.pos])
+		//		log.Print("1 ignoring:", l.s[l.start:l.pos])
 		l.ignore()
 	case unicode.IsDigit(r):
 		l.backup()
@@ -162,7 +158,6 @@ func lexStatement(l *calcLex) stateFn {
 		l.backup()
 		return lexIdentifier
 	case isOperator(r):
-		log.Printf("e")
 		l.emit(r, itemOperator)
 	default:
 		return l.errorf("unrecognized char: %#U\n", r)
@@ -173,17 +168,18 @@ func lexStatement(l *calcLex) stateFn {
 func lexComment(l *calcLex) stateFn {
 	// skip everything until the end of the line, or the end of
 	// the file, whichever is first
-	for r := l.next(); r != '\n' && r != eof; r = l.next() {}
+	for r := l.next(); r != '\n' && r != eof; r = l.next() {
+	}
 	l.backup()
-//	log.Print("2 ignoring:", l.s[l.start:l.pos])
+	//	log.Print("2 ignoring:", l.s[l.start:l.pos])
 	l.ignore()
 	return lexStatement
 }
 
 func lexType(l *calcLex) stateFn {
-	log.Print("3 ignoring:", l.s[l.start:l.pos])
 	l.ignore()
-	for r := l.next(); r != '`' && r != eof; r = l.next() {}
+	for r := l.next(); r != '`' && r != eof; r = l.next() {
+	}
 	l.backup()
 
 	if l.peek() != '`' {
@@ -191,20 +187,19 @@ func lexType(l *calcLex) stateFn {
 	}
 	l.emit(KIND_DECL, itemKindDecl)
 	l.next()
-	log.Print("4 ignoring:", l.s[l.start:l.pos])
 	l.ignore()
 	return lexStatement
 }
 
 func lexNumber(l *calcLex) stateFn {
 	l.acceptRun("0123456789")
-	log.Printf("g")
 	l.emit(NUMBER, itemNumber)
 	return lexStatement
 }
 
 func lexIdentifier(l *calcLex) stateFn {
-	for isAlphaNumeric(l.next()) {}
+	for isAlphaNumeric(l.next()) {
+	}
 	l.backup()
 	switch id := l.s[l.start:l.pos]; {
 	case id == "kind":
