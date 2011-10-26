@@ -23,14 +23,16 @@ import (
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
 	kinds []kind
-	kind kind
-	tok  tok
+	kind  kind
+	tok   tok
+	ids   []string
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
 %type <kind> kind
 %type <kinds> kinds
+%type <ids> ids
 
 // same for terminals
 %token <tok> KIND ID KIND_DECL NUMBER
@@ -52,15 +54,24 @@ kinds:  {}
 ;
 
 kind:
-	KIND ID KIND_DECL ';'
+	KIND ids KIND_DECL ';'
 	{
-		$$  =  kind{$2.val, $3.val}
+		$$  =  kind{$2, $3.val}
 	}
-|	KIND ID ';'
+|	KIND ids ';'
 	{
-		$$  =  kind{$2.val, ""}
+		$$  =  kind{$2, ""}
 	}
 ;
+
+ids:	ID
+	{
+		$$ = []string{$1.val}
+	}
+|	ids ',' ID
+	{
+		$$ = append($1, $3.val)
+	}
 
 %% /* start of programs */
 

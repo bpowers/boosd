@@ -25,8 +25,8 @@ const (
 
 
 type kind struct {
-	name string
-	def  string
+	names []string
+	def   string
 }
 
 type tok struct {
@@ -216,7 +216,7 @@ func lexIdentifier(l *calcLex) stateFn {
 }
 
 func isOperator(rune int) bool {
-	return bytes.IndexRune([]byte("+-*/|&="), rune) > -1
+	return bytes.IndexRune([]byte(",+-*/|&="), rune) > -1
 }
 
 func isIdentifierStart(r int) bool {
