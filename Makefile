@@ -16,5 +16,5 @@ include $(GOROOT)/src/Make.cmd
 gofmt:
 	gofmt -w $(GOFILES)
 
-parse.go: calc.y
+parse.go: parse.y
 	goyacc -o $@ -p boosd $< && gofmt -w $@
