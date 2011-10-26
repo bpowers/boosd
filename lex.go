@@ -9,10 +9,9 @@ import (
 	"utf8"
 )
 
-type itemType int
-
 const eof = 0
 
+type itemType int
 const (
 	itemEOF itemType = iota
 	itemIdentifier
@@ -27,6 +26,19 @@ const (
 	itemLParen
 	itemRParen
 )
+
+type astType int
+const (
+	astRef astType = iota
+	astNumber
+	astOp
+	astFn
+)
+
+// ast node
+type node struct {
+
+}
 
 type kind struct {
 	names []string
@@ -156,6 +168,9 @@ func (l *boosdLex) errorf(format string, args ...interface{}) stateFn {
 func lexStatement(l *boosdLex) stateFn {
 	switch r := l.next(); {
 	case r == eof:
+		if l.semi {
+			l.emit(';', itemSemi)
+		}
 		l.emit(eof, itemEOF)
 	case r == '/':
 		if l.peek() == '/' {
@@ -282,7 +297,7 @@ func isLiteralStart(r int) bool {
 }
 
 func isOperator(rune int) bool {
-	return bytes.IndexRune([]byte(",+-*/|&=(){}"), rune) > -1
+	return bytes.IndexRune([]byte(",+-*/|&=(){}:"), rune) > -1
 }
 
 func isIdentifierStart(r int) bool {

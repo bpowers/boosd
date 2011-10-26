@@ -18,7 +18,6 @@ import (
 
 %}
 
-
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
@@ -30,6 +29,7 @@ import (
 	str   string
 	mdl   mdl
 	models []mdl
+	node node
 }
 
 // any non-terminal which returns a value needs a type, which is
@@ -38,19 +38,20 @@ import (
 %type <kinds> kinds
 %type <ids>   ids imports callable
 %type <cu>    file
-%type <str>   pkg import
+%type <str>   pkg import opt_kind
 %type <mdl>   def
 %type <models> defs
+%type <node> expr
 
 // same for terminals
 %token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE MODEL
 %token <tok> CALLABLE
 
-%left '|'
-%left '&'
 %left '+'  '-'
-%left '*'  '/'  '%'
+%left '*'  '/'
+%left '^'
 %left UMINUS      /*  supplies  precedence  for  unary  minus  */
+%left FN_CALL
 %%
 
 file:	pkg
@@ -93,14 +94,18 @@ kinds:	{}
 	}
 ;
 
-kind:
-	KIND ids KIND_DECL ';'
+kind:	KIND ids opt_kind ';'
 	{
-		$$  =  kind{$2, $3.val}
+		$$  =  kind{$2, $3}
 	}
-|	KIND ids ';'
+;
+
+opt_kind: {
+		$$ = ""
+	}
+|	KIND_DECL
 	{
-		$$  =  kind{$2, ""}
+		$$ = $1.val
 	}
 ;
 
@@ -113,18 +118,16 @@ ids:	ID
 		$$ = append($1, $3.val)
 	}
 
-defs:
-{
-}
+defs:	{}
 |	defs def
 	{
 		$$ = append($1, $2)
 	}
 ;
 
-def:	MODEL ID callable '{' stmts '}' ';'
+def:	MODEL ID opt_kind callable '{' stmts '}' ';'
 	{
-		$$.sig = $3
+		$$.sig = $4
 	}
 ;
 
@@ -136,6 +139,62 @@ callable: {}
 ;
 
 stmts:	{}
+|	stmts stmt
+	{
+	}
+;
+
+stmt:	ID opt_kind ';'
+	{}
+|	ID ID '=' '{' initializers '}' ';'
+	{
+	}
+|	ID ID '=' expr ';'
+	{
+	}
+|	ID '=' expr ';'
+	{
+	}
+;
+
+initializers: {}
+|	initializers initializer
+	{
+	}
+;
+
+initializer: {}
+|	ID ':' expr ';'
+	{
+	}
+;
+
+expr:	'(' expr ')'
+	{
+		$$  =  $2
+	}
+|	expr '+' expr
+	{}
+|	expr '-' expr
+	{}
+|	expr '*' expr
+	{}
+|	expr '/' expr
+	{}
+|	expr '%' expr
+	{}
+|	expr '&' expr
+	{}
+|	expr '|' expr
+	{}
+|	'-' expr %prec UMINUS
+	{}
+|	ID '(' ids ')' %prec FN_CALL
+	{}
+|	ID
+	{}
+|	NUMBER
+	{}
 ;
 
 %% /* start of programs */
