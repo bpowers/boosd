@@ -1,13 +1,13 @@
 include $(GOROOT)/src/Make.inc
 
-TARG = calc
+TARG = boosd
 
 GOFILES = \
 	lex.go\
-	calc.go\
+	parse.go\
 
 CLEANFILES += \
-	calc.go\
+	parse.go\
 	y.output\
 
 include $(GOROOT)/src/Make.cmd
@@ -16,5 +16,5 @@ include $(GOROOT)/src/Make.cmd
 gofmt:
 	gofmt -w $(GOFILES)
 
-calc.go: calc.y
-	goyacc -o $@ -p calc $< && gofmt -w $@
+parse.go: calc.y
+	goyacc -o $@ -p boosd $< && gofmt -w $@

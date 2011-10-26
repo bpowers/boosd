@@ -1,7 +1,7 @@
 *~
 y.output
-calc
-calc.go
+boosd
+parse.go
 *.o
 *.a
 *.[568vq]

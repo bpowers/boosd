@@ -1,3 +1,4 @@
+package runtime
 
 // pseudo-kinds
 kind time

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+//	"log"
 	"strings"
 	"unicode"
 	"utf8"
@@ -20,6 +21,7 @@ const (
 	itemOperator
 	itemKindDecl
 	itemKeyword
+	itemLiteral
 )
 
 type kind struct {
@@ -35,9 +37,16 @@ type tok struct {
 	kind   itemType
 }
 
-type stateFn func(*calcLex) stateFn
+type compilationUnit struct {
+	pkgName string
+	imports []string
+	kinds   []kind
+	models  []string
+}
 
-type calcLex struct {
+type stateFn func(*boosdLex) stateFn
+
+type boosdLex struct {
 	s     string   // the string being scanned
 	pos   int      // current position in the input
 	start int      // start of this token
@@ -45,9 +54,11 @@ type calcLex struct {
 	items chan tok // channel of scanned items
 	state stateFn
 	semi  bool
+
+	cu    *compilationUnit
 }
 
-func (l *calcLex) Lex(lval *calcSymType) int {
+func (l *boosdLex) Lex(lval *boosdSymType) int {
 	for {
 		select {
 		case item := <-l.items:
@@ -60,20 +71,20 @@ func (l *calcLex) Lex(lval *calcSymType) int {
 	panic("unreachable")
 }
 
-func newCalcLex(input string) calcLexer {
-	return &calcLex{
+func newBoosdLex(input string, cu *compilationUnit) *boosdLex {
+	return &boosdLex{
 		s:     input,
 		items: make(chan tok, 2),
 		state: lexStatement,
+		cu:    cu,
 	}
 }
 
-func (l *calcLex) Error(s string) {
-	panic(s)
+func (l *boosdLex) Error(s string) {
 	fmt.Printf("syntax error: %s\n", s)
 }
 
-func (l *calcLex) next() int {
+func (l *boosdLex) next() int {
 	if l.pos >= len(l.s) {
 		return 0
 	}
@@ -83,21 +94,21 @@ func (l *calcLex) next() int {
 	return rune
 }
 
-func (l *calcLex) backup() {
+func (l *boosdLex) backup() {
 	l.pos -= l.width
 }
 
-func (l *calcLex) peek() int {
+func (l *boosdLex) peek() int {
 	peek := l.next()
 	l.backup()
 	return peek
 }
 
-func (l *calcLex) ignore() {
+func (l *boosdLex) ignore() {
 	l.start = l.pos
 }
 
-func (l *calcLex) accept(valid string) bool {
+func (l *boosdLex) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
 	}
@@ -105,33 +116,33 @@ func (l *calcLex) accept(valid string) bool {
 	return false
 }
 
-func (l *calcLex) acceptRun(valid string) {
+func (l *boosdLex) acceptRun(valid string) {
 	for strings.IndexRune(valid, l.next()) >= 0 {
 	}
 	l.backup()
 }
 
-func (l *calcLex) emit(yyTy int, ty itemType) {
+func (l *boosdLex) emit(yyTy int, ty itemType) {
 	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
-	//	log.Printf("t: %#v\n", t)
+//	log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
 
 	switch {
-	case ty == itemIdentifier || ty == itemNumber || ty == itemKindDecl:
+	case ty == itemIdentifier || ty == itemNumber || ty == itemKindDecl || ty == itemLiteral:
 		l.semi = true
 	default:
 		l.semi = false
 	}
 }
 
-func (l *calcLex) errorf(format string, args ...interface{}) stateFn {
+func (l *boosdLex) errorf(format string, args ...interface{}) stateFn {
 	fmt.Printf(format, args...)
 	l.emit(eof, itemEOF)
 	return nil
 }
 
-func lexStatement(l *calcLex) stateFn {
+func lexStatement(l *boosdLex) stateFn {
 	switch r := l.next(); {
 	case r == eof:
 		l.emit(eof, itemEOF)
@@ -154,6 +165,9 @@ func lexStatement(l *calcLex) stateFn {
 	case unicode.IsDigit(r):
 		l.backup()
 		return lexNumber
+	case isLiteralStart(r):
+		l.backup()
+		return lexLiteral
 	case isIdentifierStart(r):
 		l.backup()
 		return lexIdentifier
@@ -165,7 +179,7 @@ func lexStatement(l *calcLex) stateFn {
 	return lexStatement
 }
 
-func lexComment(l *calcLex) stateFn {
+func lexComment(l *boosdLex) stateFn {
 	// skip everything until the end of the line, or the end of
 	// the file, whichever is first
 	for r := l.next(); r != '\n' && r != eof; r = l.next() {
@@ -176,7 +190,7 @@ func lexComment(l *calcLex) stateFn {
 	return lexStatement
 }
 
-func lexType(l *calcLex) stateFn {
+func lexType(l *boosdLex) stateFn {
 	l.ignore()
 	for r := l.next(); r != '`' && r != eof; r = l.next() {
 	}
@@ -191,23 +205,47 @@ func lexType(l *calcLex) stateFn {
 	return lexStatement
 }
 
-func lexNumber(l *calcLex) stateFn {
+func lexNumber(l *boosdLex) stateFn {
 	l.acceptRun("0123456789")
 	l.emit(NUMBER, itemNumber)
 	return lexStatement
 }
 
-func lexIdentifier(l *calcLex) stateFn {
+func lexLiteral(l *boosdLex) stateFn {
+	delim := l.next()
+	l.ignore()
+	for r := l.next(); r != delim && r != eof; r = l.next() {
+	}
+	l.backup()
+
+	if l.peek() != delim {
+		return l.errorf("unexpected EOF")
+	}
+	l.emit(LITERAL, itemLiteral)
+	l.next()
+	l.ignore()
+	return lexStatement
+}
+
+func lexIdentifier(l *boosdLex) stateFn {
 	for isAlphaNumeric(l.next()) {
 	}
 	l.backup()
 	switch id := l.s[l.start:l.pos]; {
 	case id == "kind":
 		l.emit(KIND, itemKeyword)
+	case id == "import":
+		l.emit(IMPORT, itemKeyword)
+	case id == "package":
+		l.emit(PACKAGE, itemKeyword)
 	default:
 		l.emit(ID, itemIdentifier)
 	}
 	return lexStatement
+}
+
+func isLiteralStart(r int) bool {
+	return r == '"'
 }
 
 func isOperator(rune int) bool {
