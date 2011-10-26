@@ -11,6 +11,8 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -41,49 +43,36 @@ import (
 
 %%
 
-kinds:
-	kind
+kinds:  {}
+|	kinds kind
 	{
-		fmt.Printf("%#v\n", $1);
-//		$$ = append($1, $2);
-		$$ = []kind{$1}
+		fmt.Printf("%#v\n", $2)
+		$$ = append($1, $2)
 	}
 ;
 
 kind:
-	KIND ID KIND_DECL '\n'
+	KIND ID KIND_DECL ';'
 	{
 		$$  =  kind{$2.val, $3.val}
 	}
-//|	KIND ID '\n'
+|	KIND ID ';'
+	{
+		$$  =  kind{$2.val, ""}
+	}
 ;
 
 %% /* start of programs */
 
-func Parse(eqn string) int {
-	return calcParse(newCalcLex(eqn))
+func Parse(str string) int {
+	return calcParse(newCalcLex(str))
 }
 
 func main() {
 	fi := bufio.NewReader(os.NewFile(0, "stdin"))
-
-	for {
-		var eqn string
-		var ok bool
-
-		fmt.Printf("equation: ")
-		if eqn, ok = readline(fi); ok {
-			Parse(eqn)
-		} else {
-			break
-		}
-	}
-}
-
-func readline(fi *bufio.Reader) (string, bool) {
-	s, err := fi.ReadString('\n')
+	units, err := ioutil.ReadAll(fi)
 	if err != nil {
-		return "", false
+		log.Fatal("ReadAll:", err)
 	}
-	return s, true
+	Parse(string(units))
 }

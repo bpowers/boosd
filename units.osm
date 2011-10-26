@@ -1,0 +1,73 @@
+
+// pseudo-kinds
+kind time
+kind distance
+kind temp
+kind money
+
+// dimensions
+kind m                          `# distance`
+kind kg                         `# mass`
+kind sec                        `# time`
+kind coul                       `#`
+kind candela                    `#`
+kind $                          `# money`
+kind radian                     `#`
+kind bit                        `#`
+kind erlang                     `#`
+kind °K                         `# temp`
+kind dmnl                       `#`
+
+// constants
+kind π                          `3.14159265358979323846`
+kind pi                         `π`
+kind c                          `2.997925e+8 m/sec`
+kind g                          `9.80665 m/sec²`
+kind au                         `1.49597871e+11 m`
+kind mole                       `6.022169e+23`
+kind e                          `1.6021917e-19 coul`
+kind energy                     `c²`
+kind force                      `g`
+kind mercury                    `1.33322e+5 kg/m²sec²`
+kind hg                         `mercury`
+kind h                          `6.62620e-34 m²kg/sec`
+kind ℏ                          `h/2 π`
+kind hbar                       `ℏ`
+kind nonillion                  `1e30`
+kind octillion                  `1e27`
+kind septillion                 `1e24`
+kind sextillion                 `1e21`
+kind pentillion                 `1e18`
+kind quadrillion                `1e15`
+kind trillion                   `1e12`
+kind billion                    `1e9`
+kind million                    `1e6`
+kind thousand                   `1e3`
+kind hundred                    `1e2`
+
+// time
+kind time
+kind second, seconds            `sec`
+kind min, minute, minutes       `60 seconds`
+kind hour, hours                `60 minutes`
+kind day, days                  `24 hours`
+kind week, weeks                `7 days`
+kind yr, year                   `365.24219879 days`
+kind month, months              `1|12 year`
+kind ms                         `millisec`
+kind us                         `microsec`
+
+// distance
+kind meter                      `m`
+kind cm                         `centimeter`
+kind mm                         `millimeter`
+kind km                         `kilometer`
+kind nm                         `nanometer`
+kind micron                     `micrometer`
+kind µ                          `micrometer`
+kind Å                          `decinanometer`
+kind angstrom                   `Å`
+
+kind Individual, Individuals
+kind Rabbit, Rabbits, Rab       `# Individual`
+kind Fox, Foxes                 `# Individual`

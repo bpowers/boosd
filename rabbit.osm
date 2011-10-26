@@ -1,0 +1,156 @@
+
+// pseudo-kinds
+kind time
+kind distance
+kind temp
+kind money
+
+// dimensions
+kind m                          `# distance`
+kind kg                         `# mass`
+kind sec                        `# time`
+kind coul                       `#`
+kind candela                    `#`
+kind $                          `# money`
+kind radian                     `#`
+kind bit                        `#`
+kind erlang                     `#`
+kind °K                         `# temp`
+kind dmnl                       `#`
+
+// constants
+kind π                          `3.14159265358979323846`
+kind pi                         `π`
+kind c                          `2.997925e+8 m/sec`
+kind g                          `9.80665 m/sec²`
+kind au                         `1.49597871e+11 m`
+kind mole                       `6.022169e+23`
+kind e                          `1.6021917e-19 coul`
+kind energy                     `c²`
+kind force                      `g`
+kind mercury                    `1.33322e+5 kg/m²sec²`
+kind hg                         `mercury`
+kind h                          `6.62620e-34 m²kg/sec`
+kind ℏ                          `h/2 π`
+kind hbar                       `ℏ`
+kind nonillion                  `1e30`
+kind octillion                  `1e27`
+kind septillion                 `1e24`
+kind sextillion                 `1e21`
+kind pentillion                 `1e18`
+kind quadrillion                `1e15`
+kind trillion                   `1e12`
+kind billion                    `1e9`
+kind million                    `1e6`
+kind thousand                   `1e3`
+kind hundred                    `1e2`
+
+// time
+kind time
+kind second, seconds            `sec`
+kind min, minute, minutes       `60 seconds`
+kind hour, hours                `60 minutes`
+kind day, days                  `24 hours`
+kind week, weeks                `7 days`
+kind yr, year                   `365.24219879 days`
+kind month, months              `1|12 year`
+kind ms                         `millisec`
+kind us                         `microsec`
+
+// distance
+kind meter                      `m`
+kind cm                         `centimeter`
+kind mm                         `millimeter`
+kind km                         `kilometer`
+kind nm                         `nanometer`
+kind micron                     `micrometer`
+kind µ                          `micrometer`
+kind Å                          `decinanometer`
+kind angstrom                   `Å`
+
+kind Individual, Individuals
+kind Rabbit, Rabbits, Rab       `# Individual`
+kind Fox, Foxes                 `# Individual`
+
+
+model smooth callable (variable, delay, initial) {
+        stock smooth = {
+                biflow: (variable - smooth)/delay
+                intial: initial
+        }
+}
+
+model Population `Individuals` {
+        initial_population
+
+        birth_rate `1/time`
+        average_lifespan `time`
+
+	flow migrations = 0
+        flow births     = population * birth_rate
+        flow deaths     = population / avg_lifespan
+
+        stock population = {
+		biflow:  migrations
+                inflow:  births
+		outflow: deaths
+                initial: initial_population
+        }
+
+        avg_population = smooth(population, delay, initial)
+}
+
+model RabbitPopulation `Rabbits` specializes Population {
+        carrying_capacity
+        consumption_of_rabbits
+
+        initial_population = 500 Rabbits
+        birth_rate         = 2 m²/sec
+        avg_lifespan       = 2 years
+        crowding           = population/carrying_capacity
+
+        table effect_on_deaths `dmnl` = [(0, 0.75), (3, 2.5), (6, 6), (8, 11), (10, 20)]
+
+        flow deaths = max(population/avg_lifespan * effect_on_deaths[crowding],
+                consumption_of_rabbits)
+}
+
+model FoxPopulation `Foxes` specializes Population {
+        consumption_of_rabbits `Rabbits`
+
+        initial_population = 30 Foxes
+        birth_rate         = .25 Foxes/year
+        avg_lifespan       = 4 years
+        food_requirements  = 25 Rabbits/year
+        food_availability  = consumption_of_rabbits/population/food_requirements
+
+        table mortality_lookup = [(0, 20), (.3, 5), (.5, 2), (1, 1), (2, .5)]
+
+        flow deaths = population/avg_lifespan*mortality_lookup[food_availability]
+}
+
+model RabbitFox {
+        sim.integration = "euler"
+
+        time = {
+                start:     0  `years`
+                end:       50 `years`
+                step:      .5 `months`
+                save_step: 1  `year`
+        }
+
+	time_in_secs `sec` = time
+
+        crowding_effect = [(0, 0), (1, 1), (2, 2), (6, 2)][rabbits.crowding]
+
+        fox_consumption_of_rabbits = foxes * foxes.food_requirements *
+                crowding_effect
+
+        rabbits = RabbitPopulation{
+                carrying_capacity:      500 `Rabbits`
+                consumption_of_rabbits: fox_consumption_of_rabbits
+        }
+        foxes = FoxPopulation{
+                consumption_of_rabbits: fox_consumption_of_rabbits
+        }
+}
