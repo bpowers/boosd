@@ -14,28 +14,24 @@ import (
 	"os"
 )
 
-var regs = map[string]int{}
-var base int
-
 %}
-
 
 
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
-	kind int
-	val  int
-	id   string
+	kinds []kind
+	kind kind
+	tok  tok
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-%type <val> expr
+%type <kind> kind
+%type <kinds> kinds
 
 // same for terminals
-%token <val> NUMBER
-%token <id> IDENTIFIER
+%token <tok> KIND ID KIND_DECL NUMBER
 
 %left '|'
 %left '&'
@@ -45,45 +41,24 @@ var base int
 
 %%
 
-list	:    '\n'
-	|    list stat '\n'
-	;
+kinds:
+	kind
+	{
+		fmt.Printf("%#v\n", $1);
+//		$$ = append($1, $2);
+		$$ = []kind{$1}
+	}
+;
 
+kind:
+	KIND ID KIND_DECL '\n'
+	{
+		$$  =  kind{$2.val, $3.val}
+	}
+//|	KIND ID '\n'
+;
 
-stat	:    expr
-		{
-			fmt.Printf( "%d\n", $1 );
-		}
-	|    IDENTIFIER '=' expr
-		{
-			regs[$1]  =  $3
-		}
-	;
-
-expr	:    '(' expr ')'
-		{ $$  =  $2 }
-	|    expr '+' expr
-		{ $$  =  $1 + $3 }
-	|    expr '-' expr
-		{ $$  =  $1 - $3 }
-	|    expr '*' expr
-		{ $$  =  $1 * $3 }
-	|    expr '/' expr
-		{ $$  =  $1 / $3 }
-	|    expr '%' expr
-		{ $$  =  $1 % $3 }
-	|    expr '&' expr
-		{ $$  =  $1 & $3 }
-	|    expr '|' expr
-		{ $$  =  $1 | $3 }
-	|    '-'  expr        %prec  UMINUS
-		{ $$  = -$2  }
-	|    IDENTIFIER
-		{ $$  = regs[$1] }
-	|    NUMBER
-	;
-
-%%      /*  start  of  programs  */
+%% /* start of programs */
 
 func Parse(eqn string) int {
 	return calcParse(newCalcLex(eqn))

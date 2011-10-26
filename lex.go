@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 	"unicode"
 	"utf8"
@@ -17,7 +16,23 @@ const (
 	itemEOF        itemType = iota
 	itemIdentifier
 	itemNumber
+	itemNewline
+	itemOperator
 )
+
+
+type kind struct {
+	name string
+	def  string
+}
+
+type tok struct {
+	val    string
+	line   int
+	off    int
+	yyKind int
+	kind   itemType
+}
 
 type stateFn func (*calcLex) stateFn
 
@@ -26,7 +41,7 @@ type calcLex struct {
 	pos   int              // current position in the input
 	start int              // start of this token
 	width int              // width of the last rune
-	items chan calcSymType // channel of scanned items
+	items chan tok         // channel of scanned items
 	state stateFn
 }
 
@@ -34,8 +49,8 @@ func (l *calcLex) Lex(lval *calcSymType) int {
 	for {
 		select {
 		case item := <-l.items:
-			*lval = item
-			return item.kind
+			lval.tok = item
+			return item.yyKind
 		default:
 			l.state = l.state(l)
 		}
@@ -46,7 +61,7 @@ func (l *calcLex) Lex(lval *calcSymType) int {
 func newCalcLex(input string) calcLexer {
 	return &calcLex{
 		s:     input,
-		items: make(chan calcSymType, 2),
+		items: make(chan tok, 2),
 		state: lexStatement,
 	}
 }
@@ -93,27 +108,23 @@ func (l *calcLex) acceptRun(valid string) {
 	l.backup()
 }
 
-func (l *calcLex) emit(t int) {
-	item := calcSymType{kind: t, id:l.s[l.start:l.pos]}
-	if t == NUMBER {
-		item.val, _ = strconv.Atoi(item.id)
-	}
-	l.items <- item
+func (l *calcLex) emit(yyTy int, ty itemType) {
+	l.items <- tok{val:l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
 	l.ignore()
 }
 
 func (l *calcLex) errorf(format string, args ...interface{}) stateFn {
 	fmt.Printf(format, args...)
-	l.emit(0)
+	l.emit(eof, itemEOF)
 	return nil
 }
 
 func lexStatement(l *calcLex) stateFn {
 	switch r := l.next(); {
 	case r == eof:
-		l.emit(eof)
+		l.emit(eof, itemEOF)
 	case r == '\n':
-		l.emit('\n')
+		l.emit('\n', itemNewline)
 	case unicode.IsSpace(r):
 		l.ignore()
 	case unicode.IsDigit(r):
@@ -123,7 +134,7 @@ func lexStatement(l *calcLex) stateFn {
 		l.backup()
 		return lexIdentifier
 	case isOperator(r):
-		l.emit(r)
+		l.emit(r, itemOperator)
 	default:
 		return l.errorf("unrecognized char: %#U\n", r)
 	}
@@ -132,7 +143,7 @@ func lexStatement(l *calcLex) stateFn {
 
 func lexNumber(l *calcLex) stateFn {
 	l.acceptRun("0123456789")
-	l.emit(NUMBER)
+	l.emit(NUMBER, itemNumber)
 	return lexStatement
 }
 
@@ -140,7 +151,7 @@ func lexIdentifier(l *calcLex) stateFn {
 	for isAlphaNumeric(l.next()) {}
 	l.backup()
 	fmt.Printf("ident: %s\n", l.s[l.start:l.pos])
-	l.emit(IDENTIFIER)
+	l.emit(ID, itemIdentifier)
 	return lexStatement
 }
 
