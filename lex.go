@@ -160,7 +160,7 @@ func (l *boosdLex) emit(yyTy int, ty itemType) {
 }
 
 func (l *boosdLex) errorf(format string, args ...interface{}) stateFn {
-	fmt.Printf(format, args...)
+	log.Printf(format, args...)
 	l.emit(eof, itemEOF)
 	return nil
 }
@@ -286,6 +286,8 @@ func lexIdentifier(l *boosdLex) stateFn {
 		l.emit(MODEL, itemKeyword)
 	case id == "callable":
 		l.emit(CALLABLE, itemKeyword)
+	case id == "specializes":
+		l.emit(SPECIALIZES, itemKeyword)
 	default:
 		l.emit(ID, itemIdentifier)
 	}

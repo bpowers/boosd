@@ -21,15 +21,15 @@ import (
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
-	kinds []kind
-	kind  kind
-	tok   tok
-	ids   []string
-	cu    compilationUnit
-	str   string
-	mdl   mdl
+	kinds  []kind
+	kind   kind
+	tok    tok
+	ids    []string
+	cu     compilationUnit
+	str    string
+	mdl    mdl
 	models []mdl
-	node node
+	node   node
 }
 
 // any non-terminal which returns a value needs a type, which is
@@ -38,14 +38,14 @@ import (
 %type <kinds> kinds
 %type <ids>   ids imports callable
 %type <cu>    file
-%type <str>   pkg import opt_kind
+%type <str>   pkg import opt_kind specializes
 %type <mdl>   def
 %type <models> defs
 %type <node> expr
 
 // same for terminals
 %token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE MODEL
-%token <tok> CALLABLE
+%token <tok> CALLABLE SPECIALIZES
 
 %left '+'  '-'
 %left '*'  '/'
@@ -125,7 +125,7 @@ defs:	{}
 	}
 ;
 
-def:	MODEL ID opt_kind callable '{' stmts '}' ';'
+def:	MODEL ID opt_kind callable specializes '{' stmts '}' ';'
 	{
 		$$.sig = $4
 	}
@@ -138,6 +138,14 @@ callable: {}
 	}
 ;
 
+specializes: {}
+|	SPECIALIZES ID
+	{
+		$$ = $2.val
+	}
+;
+
+
 stmts:	{}
 |	stmts stmt
 	{
@@ -145,14 +153,15 @@ stmts:	{}
 ;
 
 stmt:	ID opt_kind ';'
-	{}
+	{
+	}
 |	ID ID '=' '{' initializers '}' ';'
 	{
 	}
-|	ID ID '=' expr ';'
+|	ID ID '=' expr_w_unit ';'
 	{
 	}
-|	ID '=' expr ';'
+|	ID '=' expr_w_unit ';'
 	{
 	}
 ;
@@ -163,8 +172,12 @@ initializers: {}
 	}
 ;
 
-initializer: {}
-|	ID ':' expr ';'
+initializer: ID ':' expr ';'
+	{
+	}
+;
+
+expr_w_unit: expr opt_kind
 	{
 	}
 ;
@@ -181,11 +194,7 @@ expr:	'(' expr ')'
 	{}
 |	expr '/' expr
 	{}
-|	expr '%' expr
-	{}
-|	expr '&' expr
-	{}
-|	expr '|' expr
+|	expr '^' expr
 	{}
 |	'-' expr %prec UMINUS
 	{}

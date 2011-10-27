@@ -31,9 +31,9 @@ model RabbitPopulation `Rabbits` specializes Population {
         carrying_capacity
         consumption_of_rabbits
 
-        initial_population = 500 Rabbits
-        birth_rate         = 2 m²/sec
-        avg_lifespan       = 2 years
+        initial_population = 500 `Rabbits`
+        birth_rate         = 2 `m²/sec`
+        avg_lifespan       = 2 `years`
         crowding           = population/carrying_capacity
 
         table effect_on_deaths `dmnl` = [(0, 0.75), (3, 2.5), (6, 6), (8, 11), (10, 20)]
