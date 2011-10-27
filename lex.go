@@ -147,7 +147,7 @@ func (l *boosdLex) acceptRun(valid string) {
 
 func (l *boosdLex) emit(yyTy int, ty itemType) {
 	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
-	log.Printf("t: %#v\n", t)
+//	log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
 
@@ -190,7 +190,7 @@ func lexStatement(l *boosdLex) stateFn {
 		}
 		//		log.Print("1 ignoring:", l.s[l.start:l.pos])
 		l.ignore()
-	case unicode.IsDigit(r):
+	case unicode.IsDigit(r) || r == '.':
 		l.backup()
 		return lexNumber
 	case isLiteralStart(r):

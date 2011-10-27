@@ -1,3 +1,5 @@
+package rabbit_fox
+
 import "kinds"
 
 model smooth callable (variable, delay, initial) {
@@ -45,10 +47,10 @@ model RabbitPopulation `Rabbits` specializes Population {
 model FoxPopulation `Foxes` specializes Population {
         consumption_of_rabbits `Rabbits`
 
-        initial_population = 30 Foxes
-        birth_rate         = .25 Foxes/year
-        avg_lifespan       = 4 years
-        food_requirements  = 25 Rabbits/year
+        initial_population = 30 `Foxes`
+        birth_rate         = .25 `Foxes/year`
+        avg_lifespan       = 4 `years`
+        food_requirements  = 25 `Rabbits/year`
         food_availability  = consumption_of_rabbits/population/food_requirements
 
         table mortality_lookup = [(0, 20), (.3, 5), (.5, 2), (1, 1), (2, .5)]

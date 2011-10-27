@@ -153,16 +153,27 @@ stmts:	{}
 	}
 ;
 
-stmt:	ID opt_kind ';'
+stmt:	ID opt_kind assignment ';'
 	{
 	}
-|	ID ID opt_kind '=' '{' initializers '}' ';'
+|	ID ID opt_kind assignment ';'
 	{
 	}
-|	ID ID opt_kind '=' expr_w_unit ';'
+;
+
+assignment:
 	{
 	}
-|	ID opt_kind '=' expr_w_unit ';'
+|	'=' '{' initializers '}'
+	{
+	}
+|	'=' ID '{' initializers '}'
+	{
+	}
+|	'=' expr_w_unit
+	{
+	}
+|	'=' LITERAL
 	{
 	}
 ;
