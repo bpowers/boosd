@@ -152,7 +152,7 @@ func (l *boosdLex) emit(yyTy int, ty itemType) {
 	l.ignore()
 
 	switch {
-	case ty == itemRBracket || ty == itemRParen:
+	case ty == itemRBracket || ty == itemRParen || ty == itemRSquare:
 		fallthrough
 	case ty == itemIdentifier || ty == itemNumber || ty == itemKindDecl || ty == itemLiteral:
 		l.semi = true
@@ -257,6 +257,12 @@ func lexType(l *boosdLex) stateFn {
 
 func lexNumber(l *boosdLex) stateFn {
 	l.acceptRun("0123456789")
+	l.accept(".")
+	l.acceptRun("0123456789")
+	if l.accept("eE") {
+		l.accept("+-")
+		l.acceptRun("0123456789")
+	}
 	l.emit(NUMBER, itemNumber)
 	return lexStatement
 }
