@@ -25,6 +25,8 @@ const (
 	itemRBracket
 	itemLParen
 	itemRParen
+	itemLSquare
+	itemRSquare
 )
 
 type astType int
@@ -218,6 +220,10 @@ func lexOperator(l *boosdLex) stateFn {
 		ty = itemLParen
 	case r == ')':
 		ty = itemRParen
+	case r == '[':
+		ty = itemLSquare
+	case r == ']':
+		ty = itemRSquare
 	}
 	l.emit(r, ty)
 	return lexStatement
@@ -299,7 +305,7 @@ func isLiteralStart(r int) bool {
 }
 
 func isOperator(rune int) bool {
-	return bytes.IndexRune([]byte(",+-*/|&=(){}:"), rune) > -1
+	return bytes.IndexRune([]byte(",+-*/|&=(){}[]:"), rune) > -1
 }
 
 func isIdentifierStart(r int) bool {

@@ -155,13 +155,13 @@ stmts:	{}
 stmt:	ID opt_kind ';'
 	{
 	}
-|	ID ID '=' '{' initializers '}' ';'
+|	ID ID opt_kind '=' '{' initializers '}' ';'
 	{
 	}
-|	ID ID '=' expr_w_unit ';'
+|	ID ID opt_kind '=' expr_w_unit ';'
 	{
 	}
-|	ID '=' expr_w_unit ';'
+|	ID opt_kind '=' expr_w_unit ';'
 	{
 	}
 ;
@@ -172,7 +172,7 @@ initializers: {}
 	}
 ;
 
-initializer: ID ':' expr ';'
+initializer: ID ':' expr_w_unit ';'
 	{
 	}
 ;
@@ -200,10 +200,34 @@ expr:	'(' expr ')'
 	{}
 |	ID '(' ids ')' %prec FN_CALL
 	{}
+|	table '[' expr ']' %prec FN_CALL
+	{}
+|	table
+	{}
 |	ID
 	{}
 |	NUMBER
 	{}
+;
+
+table:	'[' pairs ']'
+	{
+	}
+;
+
+pairs:	{
+	}
+|	pair
+	{
+	}
+|	pairs ',' pair
+	{
+	}
+;
+
+pair:	'(' NUMBER ',' NUMBER ')'
+	{
+	}
 ;
 
 %% /* start of programs */
