@@ -36,7 +36,7 @@ import (
 // really a field name in the above union struct
 %type <kind>  kind
 %type <kinds> kinds
-%type <ids>   ids imports callable
+%type <ids>   id_list imports callable
 %type <cu>    file
 %type <str>   pkg import opt_kind specializes
 %type <mdl>   def
@@ -94,7 +94,7 @@ kinds:	{}
 	}
 ;
 
-kind:	KIND ids opt_kind ';'
+kind:	KIND id_list opt_kind ';'
 	{
 		$$  =  kind{$2, $3}
 	}
@@ -109,14 +109,15 @@ opt_kind: {
 	}
 ;
 
-ids:	ID
+id_list: ID
 	{
 		$$ = []string{$1.val}
 	}
-|	ids ',' ID
+|	id_list ',' ID
 	{
 		$$ = append($1, $3.val)
 	}
+;
 
 defs:	{}
 |	defs def
@@ -132,7 +133,7 @@ def:	MODEL ID opt_kind callable specializes '{' stmts '}' ';'
 ;
 
 callable: {}
-|	CALLABLE '(' ids ')'
+|	CALLABLE '(' id_list ')'
 	{
 		$$ = $3
 	}
@@ -198,9 +199,11 @@ expr:	'(' expr ')'
 	{}
 |	'-' expr %prec UMINUS
 	{}
-|	ID '(' ids ')' %prec FN_CALL
+|	ID '(' expr_list ')' %prec FN_CALL
 	{}
 |	table '[' expr ']' %prec FN_CALL
+	{}
+|	ID '[' expr ']' %prec FN_CALL
 	{}
 |	table
 	{}
@@ -210,14 +213,21 @@ expr:	'(' expr ')'
 	{}
 ;
 
+
+expr_list: expr
+	{
+	}
+|	expr_list ',' expr
+	{
+	}
+;
+
 table:	'[' pairs ']'
 	{
 	}
 ;
 
-pairs:	{
-	}
-|	pair
+pairs:	pair
 	{
 	}
 |	pairs ',' pair
