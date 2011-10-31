@@ -5,6 +5,7 @@ TARG = boosd
 GOFILES = \
 	lex.go\
 	parse.go\
+	ast.go\
 
 CLEANFILES += \
 	parse.go\

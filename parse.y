@@ -25,7 +25,7 @@ import (
 	kind   kind
 	tok    tok
 	ids    []string
-	cu     compilationUnit
+	file     File
 	str    string
 	mdl    mdl
 	models []mdl
@@ -37,7 +37,7 @@ import (
 %type <kind>  kind
 %type <kinds> kinds
 %type <ids>   id_list imports callable
-%type <cu>    file
+%type <file>    file
 %type <str>   pkg import opt_kind specializes
 %type <mdl>   def
 %type <models> defs
@@ -59,7 +59,7 @@ file:	pkg
 	kinds
 	defs
 	{
-		*boosdlex.(*boosdLex).cu = compilationUnit{
+		*boosdlex.(*boosdLex).file = File{
 			pkgName: $1,
 			imports: $2,
 			kinds: $3,
@@ -253,14 +253,14 @@ pair:	'(' NUMBER ',' NUMBER ')'
 
 %% /* start of programs */
 
-func Parse(str string) *compilationUnit {
-	cu := &compilationUnit{}
-	err := boosdParse(newBoosdLex(str, cu))
+func Parse(str string) *File {
+	f := &File{}
+	err := boosdParse(newBoosdLex(str, f))
 	if err != 0 {
 		return nil
 	}
 
-	return cu
+	return f
 }
 
 func main() {
@@ -269,6 +269,6 @@ func main() {
 	if err != nil {
 		log.Fatal("ReadAll:", err)
 	}
-	cu := Parse(string(units))
-	log.Printf("compilationUnit: %#v\n", cu)
+	f := Parse(string(units))
+	log.Printf("compilationUnit: %#v\n", f)
 }

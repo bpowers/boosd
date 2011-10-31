@@ -60,7 +60,7 @@ type mdl struct {
 	sig  []string
 }
 
-type compilationUnit struct {
+type File struct {
 	pkgName string
 	imports []string
 	kinds   []kind
@@ -78,7 +78,7 @@ type boosdLex struct {
 	state stateFn
 	semi  bool
 
-	cu    *compilationUnit
+	file  *File
 }
 
 func (l *boosdLex) Lex(lval *boosdSymType) int {
@@ -94,12 +94,12 @@ func (l *boosdLex) Lex(lval *boosdSymType) int {
 	panic("unreachable")
 }
 
-func newBoosdLex(input string, cu *compilationUnit) *boosdLex {
+func newBoosdLex(input string, file *File) *boosdLex {
 	return &boosdLex{
 		s:     input,
 		items: make(chan tok, 2),
 		state: lexStatement,
-		cu:    cu,
+		file:  file,
 	}
 }
 
