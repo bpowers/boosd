@@ -42,10 +42,11 @@ import (
 %type <mdl>   def
 %type <models> defs
 %type <node> expr
+%type <tok> top_type
 
 // same for terminals
 %token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE MODEL
-%token <tok> CALLABLE SPECIALIZES
+%token <tok> CALLABLE SPECIALIZES INTERFACE
 
 %left '+'  '-'
 %left '*'  '/'
@@ -126,9 +127,19 @@ defs:	{}
 	}
 ;
 
-def:	MODEL ID opt_kind callable specializes '{' stmts '}' ';'
+def:	top_type ID opt_kind callable specializes '{' stmts '}' ';'
 	{
 		$$.sig = $4
+	}
+;
+
+top_type: MODEL
+	{
+		$$ = $1
+	}
+|	INTERFACE
+	{
+		$$ = $1
 	}
 ;
 
