@@ -12,6 +12,7 @@ import (
 const eof = 0
 
 type itemType int
+
 const (
 	itemEOF itemType = iota
 	itemIdentifier
@@ -30,6 +31,7 @@ const (
 )
 
 type astType int
+
 const (
 	astRef astType = iota
 	astNumber
@@ -78,7 +80,7 @@ type boosdLex struct {
 	state stateFn
 	semi  bool
 
-	file  *File
+	file *File
 }
 
 func (l *boosdLex) Lex(lval *boosdSymType) int {
@@ -147,7 +149,7 @@ func (l *boosdLex) acceptRun(valid string) {
 
 func (l *boosdLex) emit(yyTy int, ty itemType) {
 	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
-//	log.Printf("t: %#v\n", t)
+	//	log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
 
@@ -303,7 +305,7 @@ func lexIdentifier(l *boosdLex) stateFn {
 	case id == "specializes":
 		l.emit(SPECIALIZES, itemKeyword)
 	default:
-		l.emit(ID, itemIdentifier)
+		l.emit(IDENT, itemIdentifier)
 	}
 	return lexStatement
 }

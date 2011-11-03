@@ -34,18 +34,18 @@ import (
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-%type <kind>  kind
-%type <kinds> kinds
-%type <ids>   id_list imports callable
-%type <file>    file
-%type <str>   pkg import opt_kind specializes
-%type <mdl>   def
+%type <kind>   kind
+%type <kinds>  kinds
+%type <ids>    id_list imports callable
+%type <file>   file
+%type <str>    pkg import opt_kind specializes
+%type <mdl>    def
 %type <models> defs
-%type <node> expr
-%type <tok> top_type
+%type <node>   expr
+%type <tok>    top_type
 
 // same for terminals
-%token <tok> IMPORT KIND ID KIND_DECL NUMBER LITERAL PACKAGE MODEL
+%token <tok> IMPORT KIND IDENT KIND_DECL NUMBER LITERAL PACKAGE MODEL
 %token <tok> CALLABLE SPECIALIZES INTERFACE
 
 %left '+'  '-'
@@ -69,7 +69,7 @@ file:	pkg
 	}
 ;
 
-pkg:	PACKAGE ID ';'
+pkg:	PACKAGE IDENT ';'
 	{
 		$$ = $2.val
 	}
@@ -110,11 +110,11 @@ opt_kind: {
 	}
 ;
 
-id_list: ID
+id_list: IDENT
 	{
 		$$ = []string{$1.val}
 	}
-|	id_list ',' ID
+|	id_list ',' IDENT
 	{
 		$$ = append($1, $3.val)
 	}
@@ -127,7 +127,7 @@ defs:	{}
 	}
 ;
 
-def:	top_type ID opt_kind callable specializes '{' stmts '}' ';'
+def:	top_type IDENT opt_kind callable specializes '{' stmts '}' ';'
 	{
 		$$.sig = $4
 	}
@@ -151,7 +151,7 @@ callable: {}
 ;
 
 specializes: {}
-|	SPECIALIZES ID
+|	SPECIALIZES IDENT
 	{
 		$$ = $2.val
 	}
@@ -164,10 +164,10 @@ stmts:	{}
 	}
 ;
 
-stmt:	ID opt_kind assignment ';'
+stmt:	IDENT opt_kind assignment ';'
 	{
 	}
-|	ID ID opt_kind assignment ';'
+|	IDENT IDENT opt_kind assignment ';'
 	{
 	}
 ;
@@ -178,7 +178,7 @@ assignment:
 |	'=' '{' initializers '}'
 	{
 	}
-|	'=' ID '{' initializers '}'
+|	'=' IDENT '{' initializers '}'
 	{
 	}
 |	'=' expr_w_unit
@@ -195,7 +195,7 @@ initializers: {}
 	}
 ;
 
-initializer: ID ':' expr_w_unit ';'
+initializer: IDENT ':' expr_w_unit ';'
 	{
 	}
 ;
@@ -221,15 +221,15 @@ expr:	'(' expr ')'
 	{}
 |	'-' expr %prec UMINUS
 	{}
-|	ID '(' expr_list ')' %prec FN_CALL
+|	IDENT '(' expr_list ')' %prec FN_CALL
 	{}
 |	table '[' expr ']' %prec FN_CALL
 	{}
-|	ID '[' expr ']' %prec FN_CALL
+|	IDENT '[' expr ']' %prec FN_CALL
 	{}
 |	table
 	{}
-|	ID
+|	IDENT
 	{}
 |	NUMBER
 	{}
