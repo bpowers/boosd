@@ -25,11 +25,11 @@ import (
 	kind   kind
 	tok    tok
 	ids    []string
-	file     File
+	file   File
 	str    string
 	mdl    mdl
 	models []mdl
-	node   node
+	node   Node
 }
 
 // any non-terminal which returns a value needs a type, which is
@@ -42,11 +42,12 @@ import (
 %type <mdl>    def
 %type <models> defs
 %type <node>   expr
-%type <tok>    top_type
+%type <tok>    top_type lit ident
 
 // same for terminals
-%token <tok> YIMPORT YKIND YIDENT YKIND_DECL YNUMBER YLITERAL YPACKAGE
+%token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
 %token <tok> YCALLABLE YSPECIALIZES YINTERFACE YMODEL
+%token <tok> YIDENT YLITERAL YNUMBER
 
 %left '+'  '-'
 %left '*'  '/'
@@ -69,7 +70,7 @@ file:	pkg
 	}
 ;
 
-pkg:	YPACKAGE YIDENT ';'
+pkg:	YPACKAGE ident ';'
 	{
 		$$ = $2.val
 	}
@@ -82,7 +83,7 @@ imports: {}
 	}
 ;
 
-import:	YIMPORT YLITERAL ';'
+import:	YIMPORT lit ';'
 	{
 		$$ = $2.val
 	}
@@ -110,11 +111,11 @@ opt_kind: {
 	}
 ;
 
-id_list: YIDENT
+id_list: ident
 	{
 		$$ = []string{$1.val}
 	}
-|	id_list ',' YIDENT
+|	id_list ',' ident
 	{
 		$$ = append($1, $3.val)
 	}
@@ -127,7 +128,7 @@ defs:	{}
 	}
 ;
 
-def:	top_type YIDENT opt_kind callable specializes '{' stmts '}' ';'
+def:	top_type ident opt_kind callable specializes '{' stmts '}' ';'
 	{
 		$$.sig = $4
 	}
@@ -151,7 +152,7 @@ callable: {}
 ;
 
 specializes: {}
-|	YSPECIALIZES YIDENT
+|	YSPECIALIZES ident
 	{
 		$$ = $2.val
 	}
@@ -164,10 +165,10 @@ stmts:	{}
 	}
 ;
 
-stmt:	YIDENT opt_kind assignment ';'
+stmt:	ident opt_kind assignment ';'
 	{
 	}
-|	YIDENT YIDENT opt_kind assignment ';'
+|	ident ident opt_kind assignment ';'
 	{
 	}
 ;
@@ -178,13 +179,13 @@ assignment:
 |	'=' '{' initializers '}'
 	{
 	}
-|	'=' YIDENT '{' initializers '}'
+|	'=' ident '{' initializers '}'
 	{
 	}
 |	'=' expr_w_unit
 	{
 	}
-|	'=' YLITERAL
+|	'=' lit
 	{
 	}
 ;
@@ -195,7 +196,7 @@ initializers: {}
 	}
 ;
 
-initializer: YIDENT ':' expr_w_unit ';'
+initializer: ident ':' expr_w_unit ';'
 	{
 	}
 ;
@@ -221,20 +222,34 @@ expr:	'(' expr ')'
 	{}
 |	'-' expr %prec UMINUS
 	{}
-|	YIDENT '(' expr_list ')' %prec FN_CALL
+|	ident '(' expr_list ')' %prec FN_CALL
 	{}
 |	table '[' expr ']' %prec FN_CALL
 	{}
-|	YIDENT '[' expr ']' %prec FN_CALL
+|	ident '[' expr ']' %prec FN_CALL
 	{}
 |	table
 	{}
-|	YIDENT
+|	ident
 	{}
-|	YNUMBER
+|	number
 	{}
 ;
 
+ident:	YIDENT
+	{
+	}
+;
+
+lit:	YLITERAL
+	{
+	}
+;
+
+number:	YNUMBER
+	{
+	}
+;
 
 expr_list: expr
 	{
@@ -257,7 +272,7 @@ pairs:	pair
 	}
 ;
 
-pair:	'(' YNUMBER ',' YNUMBER ')'
+pair:	'(' number ',' number ')'
 	{
 	}
 ;
