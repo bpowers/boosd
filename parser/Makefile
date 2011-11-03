@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG = boosd
+TARG = boosd/parser
 
 GOFILES = \
 	lex.go\
@@ -18,4 +18,4 @@ gofmt:
 	gofmt -w $(GOFILES)
 
 parse.go: parse.y
-	goyacc -o $@ -p boosd $< && gofmt -w $@
+	goyacc -o $@ -p boosd $< && gofmt -w $@ && sed -i 's/package main/package parser/' $@

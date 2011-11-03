@@ -5,6 +5,7 @@ all: install
 DIRS=\
 	token\
 	parser\
+	driver\
 
 NOTEST=
 NOBENCH=

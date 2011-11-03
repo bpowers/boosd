@@ -284,15 +284,3 @@ func Parse(str string) *File {
 
 	return f
 }
-
-/*
-func main() {
-	fi := bufio.NewReader(os.NewFile(0, "stdin"))
-	units, err := ioutil.ReadAll(fi)
-	if err != nil {
-		log.Fatal("ReadAll:", err)
-	}
-	f := Parse(string(units))
-	log.Printf("compilationUnit: %#v\n", f)
-}
-*/

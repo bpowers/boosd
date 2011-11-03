@@ -2,9 +2,10 @@ package simple
 
 import "kinds"
 
-model max callable(a, b) {
-	max = if(a > b, b, a)
-}
+//model max callable(a, b) {
+//	max = if(a > b, b, a)
+//}
+
 
 model smooth callable(variable, delay, initial) {
         smooth stock = {
