@@ -251,7 +251,7 @@ func lexType(l *boosdLex) stateFn {
 	if l.peek() != '`' {
 		return l.errorf("unexpected EOF")
 	}
-	l.emit(KIND_DECL, itemKindDecl)
+	l.emit(YKIND_DECL, itemKindDecl)
 	l.next()
 	l.ignore()
 	return lexStatement
@@ -265,7 +265,7 @@ func lexNumber(l *boosdLex) stateFn {
 		l.accept("+-")
 		l.acceptRun("0123456789")
 	}
-	l.emit(NUMBER, itemNumber)
+	l.emit(YNUMBER, itemNumber)
 	return lexStatement
 }
 
@@ -279,7 +279,7 @@ func lexLiteral(l *boosdLex) stateFn {
 	if l.peek() != delim {
 		return l.errorf("unexpected EOF")
 	}
-	l.emit(LITERAL, itemLiteral)
+	l.emit(YLITERAL, itemLiteral)
 	l.next()
 	l.ignore()
 	return lexStatement
@@ -291,21 +291,21 @@ func lexIdentifier(l *boosdLex) stateFn {
 	l.backup()
 	switch id := l.s[l.start:l.pos]; {
 	case id == "kind":
-		l.emit(KIND, itemKeyword)
+		l.emit(YKIND, itemKeyword)
 	case id == "import":
-		l.emit(IMPORT, itemKeyword)
+		l.emit(YIMPORT, itemKeyword)
 	case id == "package":
-		l.emit(PACKAGE, itemKeyword)
+		l.emit(YPACKAGE, itemKeyword)
 	case id == "model":
-		l.emit(MODEL, itemKeyword)
+		l.emit(YMODEL, itemKeyword)
 	case id == "interface":
-		l.emit(INTERFACE, itemKeyword)
+		l.emit(YINTERFACE, itemKeyword)
 	case id == "callable":
-		l.emit(CALLABLE, itemKeyword)
+		l.emit(YCALLABLE, itemKeyword)
 	case id == "specializes":
-		l.emit(SPECIALIZES, itemKeyword)
+		l.emit(YSPECIALIZES, itemKeyword)
 	default:
-		l.emit(IDENT, itemIdentifier)
+		l.emit(YIDENT, itemIdentifier)
 	}
 	return lexStatement
 }
