@@ -51,8 +51,6 @@ test:	test.dirs
 
 testshort: testshort.dirs
 
-bench:	bench.dirs ../../test/garbage.bench
-
 nuke: nuke.dirs
 	rm -rf "$(GOROOT)"/pkg/*
 

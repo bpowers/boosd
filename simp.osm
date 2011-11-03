@@ -1,0 +1,88 @@
+package simple
+
+import "kinds"
+
+model max callable(a, b) {
+	max = if(a > b, b, a)
+}
+
+model smooth callable(variable, delay, initial) {
+        smooth stock = {
+                biflow: (variable - smooth)/delay
+                intial: initial
+        }
+}
+
+model Population `Individuals` {
+        initial_population
+
+        birth_rate `1/time`
+        average_lifespan `time`
+
+	migrations flow = 0
+        births flow     = population * birth_rate
+        deaths flow     = population / avg_lifespan
+
+        population stock = {
+		biflow:  migrations
+                inflow:  births
+		outflow: deaths
+                initial: initial_population
+        }
+
+        avg_population = smooth(population, delay, initial)
+}
+
+model RabbitPopulation `Rabbits` specializes Population {
+        carrying_capacity
+        consumption_of_rabbits
+
+        initial_population = 500 `Rabbits`
+        birth_rate         = 2 `m²/sec`
+        avg_lifespan       = 2 `years`
+        crowding           = population/carrying_capacity
+
+        effect_on_deaths table `dmnl` = [(0, 0.75), (3, 2.5), (6, 6), (8, 11), (10, 20)]
+
+        deaths flow = max(population/avg_lifespan * effect_on_deaths[crowding],
+                consumption_of_rabbits)
+}
+
+model FoxPopulation `Foxes` specializes Population {
+        consumption_of_rabbits `Rabbits`
+
+        initial_population = 30 `Foxes`
+        birth_rate         = .25 `Foxes/year`
+        avg_lifespan       = 4 `years`
+        food_requirements  = 25 `Rabbits/year`
+        food_availability  = consumption_of_rabbits/population/food_requirements
+
+        mortality_lookup table = [(0, 20), (.3, 5), (.5, 2), (1, 1), (2, .5)]
+
+        deaths flow = population/avg_lifespan*mortality_lookup[food_availability]
+}
+
+model RabbitFox {
+        integration_method = "euler"
+        time = {
+                start:     0  `years`
+                end:       50 `years`
+                step:      .5 `months`
+                save_step: 1  `year`
+        }
+
+	time_in_secs `sec` = time
+
+        crowding_effect = [(0, 0), (1, 1), (2, 2), (6, 2)][rabbits.crowding]
+
+        fox_consumption_of_rabbits = foxes * foxes.food_requirements *
+                crowding_effect
+
+        rabbits = RabbitPopulation{
+                carrying_capacity:      500 `Rabbits`
+                consumption_of_rabbits: fox_consumption_of_rabbits
+        }
+        foxes = FoxPopulation{
+                consumption_of_rabbits: fox_consumption_of_rabbits
+        }
+}
