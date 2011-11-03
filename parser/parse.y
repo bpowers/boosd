@@ -9,11 +9,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
 )
 
 %}
@@ -289,6 +285,7 @@ func Parse(str string) *File {
 	return f
 }
 
+/*
 func main() {
 	fi := bufio.NewReader(os.NewFile(0, "stdin"))
 	units, err := ioutil.ReadAll(fi)
@@ -298,3 +295,4 @@ func main() {
 	f := Parse(string(units))
 	log.Printf("compilationUnit: %#v\n", f)
 }
+*/

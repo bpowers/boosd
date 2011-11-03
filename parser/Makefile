@@ -1,0 +1,21 @@
+include $(GOROOT)/src/Make.inc
+
+TARG = boosd
+
+GOFILES = \
+	lex.go\
+	parse.go\
+	ast.go\
+
+CLEANFILES += \
+	parse.go\
+	y.output\
+
+include $(GOROOT)/src/Make.pkg
+
+.PHONY: gofmt
+gofmt:
+	gofmt -w $(GOFILES)
+
+parse.go: parse.y
+	goyacc -o $@ -p boosd $< && gofmt -w $@

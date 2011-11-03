@@ -51,10 +51,8 @@ type kind struct {
 
 type tok struct {
 	val    string
-	line   int
-	off    int
-	yyKind int
 	kind   itemType
+	yyKind int
 }
 
 type mdl struct {

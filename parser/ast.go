@@ -1,6 +1,8 @@
 package main
 
-import ()
+import (
+	"boosd/token"
+)
 
 type ObjKind int
 
@@ -23,7 +25,6 @@ type Position struct {
 }
 
 type Pos int
-
 func (Pos) IsValid() bool {
 	return true
 }
@@ -55,8 +56,6 @@ type Object struct {
 	Unit string
 }
 
-type Token int
-
 type (
 	// A BadExpr node is a placeholder for expressions containing
 	// syntax errors for which no correct expression nodes can be
@@ -75,7 +74,7 @@ type (
 	// A BasicLit node represents a literal of basic type.
 	BasicLit struct {
 		ValuePos Pos    // literal position
-		Kind     Token  // token.INT, token.FLOAT, token.IMAG, token.CHAR, or token.STRING
+		Kind     token.Token  // token.INT, token.FLOAT, token.IMAG, token.CHAR, or token.STRING
 		Value    string // literal string; e.g. 42, 0x7f, 3.14, 1e-9, 2.4i, 'a', '\x7f', "foo" or `\m\n\o`
 	}
 
@@ -122,7 +121,7 @@ type (
 	//
 	UnaryExpr struct {
 		OpPos Pos   // position of Op
-		Op    Token // operator
+		Op    token.Token // operator
 		X     Expr  // operand
 	}
 
@@ -130,7 +129,7 @@ type (
 	BinaryExpr struct {
 		X     Expr  // left operand
 		OpPos Pos   // position of Op
-		Op    Token // operator
+		Op    token.Token // operator
 		Y     Expr  // right operand
 	}
 
