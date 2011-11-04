@@ -39,25 +39,10 @@ const (
 	astFn
 )
 
-// ast node
-type node struct {
-
-}
-
-type kind struct {
-	names []string
-	def   string
-}
-
 type tok struct {
 	val    string
 	kind   itemType
 	yyKind int
-}
-
-type mdl struct {
-	name string
-	sig  []string
 }
 
 type stateFn func(*boosdLex) stateFn

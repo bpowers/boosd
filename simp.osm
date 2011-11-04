@@ -2,7 +2,7 @@ package simple
 
 import "kinds"
 
-model Population `Individuals` {
+Population model `Individuals` {
         initial_population
 
         birth_rate `1/time`
@@ -22,7 +22,7 @@ model Population `Individuals` {
         avg_population = smooth(population, delay, initial)
 }
 
-model RabbitPopulation `Rabbits` specializes Population {
+RabbitPopulation model `Rabbits` specializes Population {
         carrying_capacity
         consumption_of_rabbits
 
@@ -37,7 +37,7 @@ model RabbitPopulation `Rabbits` specializes Population {
                 consumption_of_rabbits)
 }
 
-model FoxPopulation `Foxes` specializes Population {
+FoxPopulation model `Foxes` specializes Population {
         consumption_of_rabbits `Rabbits`
 
         initial_population = 30 `Foxes`
@@ -51,7 +51,7 @@ model FoxPopulation `Foxes` specializes Population {
         deaths flow = population/avg_lifespan*mortality_lookup[food_availability]
 }
 
-model RabbitFox {
+RabbitFox model {
         integration_method = "euler"
         time = {
                 start:     0  `years`

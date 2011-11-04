@@ -510,6 +510,12 @@ type (
 		Rparen token.Pos // position of ')', if any
 	}
 
+	VarDecl struct {
+		Name  *Ident // name of the variable
+		Type  *Ident // type (stock, flow) of the variable
+		Units Expr   // name of the variable
+	}
+
 	// A FuncDecl node represents a function declaration.
 	InterfaceDecl struct {
 		Recv *FieldList // receiver (methods); or nil (functions)
@@ -531,10 +537,12 @@ type (
 //
 func (d *BadDecl) Pos() token.Pos       { return d.From }
 func (d *GenDecl) Pos() token.Pos       { return d.TokPos }
+func (d *VarDecl) Pos() token.Pos       { return d.Name.Pos() }
 func (d *InterfaceDecl) Pos() token.Pos { return d.Type.Pos() }
 func (d *ModelDecl) Pos() token.Pos     { return d.Type.Pos() }
 
 func (d *BadDecl) End() token.Pos { return d.To }
+func (d *VarDecl) End() token.Pos { return d.Name.End() } // FIXME
 func (d *GenDecl) End() token.Pos {
 	if d.Rparen.IsValid() {
 		return d.Rparen + 1
@@ -559,6 +567,7 @@ func (d *ModelDecl) End() token.Pos {
 //
 func (d *BadDecl) declNode()       {}
 func (d *GenDecl) declNode()       {}
+func (d *VarDecl) declNode()       {}
 func (d *InterfaceDecl) declNode() {}
 func (d *ModelDecl) declNode()     {}
 

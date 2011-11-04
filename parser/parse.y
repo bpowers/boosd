@@ -24,12 +24,12 @@ import (
 	file   File
 	id     *Ident
 	str    string
-	mdl    mdl
-	models []mdl
 	node   Node
 	exprs  []Expr
 	expr   Expr
 	stmt   Stmt
+	decl   Decl
+	decls  []Decl
 	block  *BlockStmt
 }
 
@@ -39,14 +39,14 @@ import (
 %type <ids>    id_list callable
 %type <file>   file
 %type <str>    pkg import
-%type <mdl>    def
-%type <models> defs
 %type <id>     ident specializes
 %type <tok>    top_type
 %type <block>  stmts
 %type <stmt>   stmt
 %type <expr>   expr number pair table lit expr_w_unit opt_kind initializer assignment
 %type <exprs>  pairs expr_list initializers
+%type <decl>   var_decl def
+%type <decls>  defs
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -125,7 +125,7 @@ defs:	{}
 	}
 ;
 
-def:	top_type ident opt_kind callable specializes '{' stmts '}' ';'
+def:	ident top_type opt_kind callable specializes '{' stmts '}' ';'
 	{
 	}
 ;
@@ -165,37 +165,23 @@ stmts:	{
 	}
 ;
 
-stmt:	ident opt_kind ';'
+stmt:	var_decl ';'
 	{
 	}
-|	ident ident opt_kind ';'
+|	var_decl assignment ';'
 	{
-	}
-|	ident opt_kind assignment ';'
-	{
-	$$ = &AssignStmt{}
-	}
-|	ident ident opt_kind assignment ';'
-	{
+		$$ = &AssignStmt{}
 	}
 ;
 
 
-stmt:	ident opt_kind
+var_decl:	ident opt_kind
 	{
-		if $2 == nil {
-
-		} else {
-
-		}
+		$$ = &VarDecl{Name:$1, Units:$2}
 	}
 |	ident ident opt_kind
 	{
-		if $2 == nil {
-
-		} else {
-
-		}
+		$$ = &VarDecl{Name:$1, Type:$2, Units:$3}
 	}
 ;
 
