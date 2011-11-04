@@ -2,18 +2,6 @@ package simple
 
 import "kinds"
 
-//model max callable(a, b) {
-//	max = if(a > b, b, a)
-//}
-
-
-model smooth callable(variable, delay, initial) {
-        smooth stock = {
-                biflow: (variable - smooth)/delay
-                intial: initial
-        }
-}
-
 model Population `Individuals` {
         initial_population
 
@@ -72,7 +60,7 @@ model RabbitFox {
                 save_step: 1  `year`
         }
 
-	time_in_secs `sec` = time
+	time_in_secs `kilorabbits` = time
 
         crowding_effect = [(0, 0), (1, 1), (2, 2), (6, 2)][rabbits.crowding]
 

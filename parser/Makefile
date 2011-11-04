@@ -6,6 +6,9 @@ GOFILES = \
 	lex.go\
 	parse.go\
 	ast.go\
+	scope.go\
+	resolve.go\
+	errors.go\
 
 CLEANFILES += \
 	parse.go\

@@ -20,25 +20,30 @@ import (
 	kinds  []kind
 	kind   kind
 	tok    tok
-	ids    []string
+	strs   []string
+	ids    []Ident
 	file   File
+	id     Ident
 	str    string
 	mdl    mdl
 	models []mdl
 	node   Node
+	expr   Expr
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
 %type <kind>   kind
 %type <kinds>  kinds
-%type <ids>    id_list imports callable
+%type <strs>   imports
+%type <ids>    id_list callable
 %type <file>   file
-%type <str>    pkg import opt_kind specializes
+%type <str>    pkg import opt_kind
 %type <mdl>    def
 %type <models> defs
 %type <node>   expr
-%type <tok>    top_type lit ident
+%type <id>     ident specializes
+%type <tok>    top_type lit
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -58,15 +63,11 @@ file:	pkg
 	defs
 	{
 		*boosdlex.(*boosdLex).file = File{
-			pkgName: $1,
-			imports: $2,
-			kinds: $3,
-			models: $4,
 		}
 	}
 ;
 
-pkg:	YPACKAGE ident ';'
+pkg:	YPACKAGE YIDENT ';'
 	{
 		$$ = $2.val
 	}
@@ -94,7 +95,7 @@ kinds:	{}
 
 kind:	YKIND id_list opt_kind ';'
 	{
-		$$  =  kind{$2, $3}
+		$$  =  kind{}
 	}
 ;
 
@@ -109,11 +110,11 @@ opt_kind: {
 
 id_list: ident
 	{
-		$$ = []string{$1.val}
+		$$ = []Ident{$1}
 	}
 |	id_list ',' ident
 	{
-		$$ = append($1, $3.val)
+		$$ = append($1, $3)
 	}
 ;
 
@@ -126,7 +127,6 @@ defs:	{}
 
 def:	top_type ident opt_kind callable specializes '{' stmts '}' ';'
 	{
-		$$.sig = $4
 	}
 ;
 
@@ -150,7 +150,7 @@ callable: {}
 specializes: {}
 |	YSPECIALIZES ident
 	{
-		$$ = $2.val
+		$$ = $2
 	}
 ;
 
@@ -234,6 +234,7 @@ expr:	'(' expr ')'
 
 ident:	YIDENT
 	{
+		$$ = Ident{Name:$1.val}
 	}
 ;
 

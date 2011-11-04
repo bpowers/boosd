@@ -60,13 +60,6 @@ type mdl struct {
 	sig  []string
 }
 
-type File struct {
-	pkgName string
-	imports []string
-	kinds   []kind
-	models  []mdl
-}
-
 type stateFn func(*boosdLex) stateFn
 
 type boosdLex struct {
