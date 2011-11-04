@@ -38,15 +38,15 @@ import (
 %type <strs>   imports
 %type <ids>    id_list callable
 %type <file>   file
-%type <str>    pkg import opt_kind
+%type <str>    pkg import
 %type <mdl>    def
 %type <models> defs
 %type <id>     ident specializes
-%type <tok>    top_type lit
+%type <tok>    top_type
 %type <block>  stmts
 %type <stmt>   stmt
-%type <expr>   expr number pair table
-%type <exprs>  pairs
+%type <expr>   expr number pair table lit expr_w_unit opt_kind initializer assignment
+%type <exprs>  pairs expr_list initializers
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -85,7 +85,6 @@ imports: {}
 
 import:	YIMPORT lit ';'
 	{
-		$$ = $2.val
 	}
 ;
 
@@ -101,11 +100,11 @@ kind:	YKIND id_list opt_kind ';'
 ;
 
 opt_kind: {
-		$$ = ""
+		$$ = nil
 	}
 |	YKIND_DECL
 	{
-		$$ = $1.val
+		$$ = &BasicLit{Kind:token.STRING, Value:$1.val}
 	}
 ;
 
@@ -166,44 +165,76 @@ stmts:	{
 	}
 ;
 
-stmt:	ident opt_kind assignment ';'
+stmt:	ident opt_kind ';'
 	{
+	}
+|	ident ident opt_kind ';'
+	{
+	}
+|	ident opt_kind assignment ';'
+	{
+	$$ = &AssignStmt{}
 	}
 |	ident ident opt_kind assignment ';'
 	{
 	}
 ;
 
-assignment:
+
+stmt:	ident opt_kind
 	{
+		if $2 == nil {
+
+		} else {
+
+		}
 	}
-|	'=' '{' initializers '}'
+|	ident ident opt_kind
 	{
-	}
-|	'=' ident '{' initializers '}'
-	{
-	}
-|	'=' expr_w_unit
-	{
-	}
-|	'=' lit
-	{
+		if $2 == nil {
+
+		} else {
+
+		}
 	}
 ;
 
-initializers: {}
+assignment: '=' '{' initializers '}'
+	{
+		$$ = &CompositeLit{Type:NewIdent("stock"), Elts:$3}
+	}
+|	'=' ident '{' initializers '}'
+	{
+		$$ = &CompositeLit{Type:$2, Elts:$4}
+	}
+|	'=' expr_w_unit
+	{
+		$$ = $2
+	}
+|	'=' lit
+	{
+		$$ = $2
+	}
+;
+
+initializers: {
+		$$ = []Expr{}
+	}
 |	initializers initializer
 	{
+		$$ = append($1, $2)
 	}
 ;
 
 initializer: ident ':' expr_w_unit ';'
 	{
+		$$ = &KeyValueExpr{Key:$1, Value:$3}
 	}
 ;
 
 expr_w_unit: expr opt_kind
 	{
+		$$ = &UnitExpr{$1, $2}
 	}
 ;
 
@@ -212,25 +243,45 @@ expr:	'(' expr ')'
 		$$  =  $2
 	}
 |	expr '+' expr
-	{}
+	{
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.ADD}
+	}
 |	expr '-' expr
-	{}
+	{
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.SUB}
+	}
 |	expr '*' expr
-	{}
+	{
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.MUL}
+	}
 |	expr '/' expr
-	{}
+	{
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.QUO}
+	}
 |	expr '^' expr
-	{}
+	{
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.POW}
+	}
 |	'-' expr %prec UMINUS
-	{}
+	{
+		$$ = &UnaryExpr{X:$2, Op:token.POW}
+	}
 |	ident '(' expr_list ')' %prec FN_CALL
-	{}
+	{
+		$$ = &CallExpr{Fun:$1, Args:$3}
+	}
 |	table '[' expr ']' %prec FN_CALL
-	{}
+	{
+		$$ = &IndexExpr{X:$1, Index:$3}
+	}
 |	ident '[' expr ']' %prec FN_CALL
-	{}
+	{
+		$$ = &IndexExpr{X:$1, Index:$3}
+	}
 |	table
-	{}
+	{
+		$$ = $1
+	}
 |	ident
 	{
 		$$ = $1
@@ -249,6 +300,7 @@ ident:	YIDENT
 
 lit:	YLITERAL
 	{
+		$$ = &BasicLit{Kind:token.STRING, Value:$1.val}
 	}
 ;
 
@@ -260,9 +312,12 @@ number:	YNUMBER
 
 expr_list: expr
 	{
+		$$ = make([]Expr, 1, 16)
+		$$[0] = $1
 	}
 |	expr_list ',' expr
 	{
+		$$ = append($1, $3)
 	}
 ;
 

@@ -111,11 +111,10 @@ type (
 
 	// A CallExpr node represents an expression followed by an argument list.
 	CallExpr struct {
-		Fun      Expr      // function expression
-		Lparen   token.Pos // position of "("
-		Args     []Expr    // function arguments; or nil
-		Ellipsis token.Pos // position of "...", if any
-		Rparen   token.Pos // position of ")"
+		Fun    Expr      // function expression
+		Lparen token.Pos // position of "("
+		Args   []Expr    // function arguments; or nil
+		Rparen token.Pos // position of ")"
 	}
 
 	// A UnaryExpr node represents a unary expression.
@@ -365,13 +364,6 @@ type (
 		Semicolon token.Pos // position of preceding ";"
 	}
 
-	// A LabeledStmt node represents a labeled statement.
-	LabeledStmt struct {
-		Label *Ident
-		Colon token.Pos // position of ":"
-		Stmt  Stmt
-	}
-
 	// An ExprStmt node represents a (stand-alone) expression
 	// in a statement list.
 	//
@@ -383,10 +375,10 @@ type (
 	// a short variable declaration.
 	//
 	AssignStmt struct {
-		Lhs    []Expr
+		Lhs    Expr
 		TokPos token.Pos   // position of Tok
 		Tok    token.Token // assignment token, DEFINE
-		Rhs    []Expr
+		Rhs    Expr
 	}
 
 	// A BlockStmt node represents a braced statement list.
@@ -399,34 +391,31 @@ type (
 
 // Pos and End implementations for statement nodes.
 //
-func (s *BadStmt) Pos() token.Pos     { return s.From }
-func (s *DeclStmt) Pos() token.Pos    { return s.Decl.Pos() }
-func (s *EmptyStmt) Pos() token.Pos   { return s.Semicolon }
-func (s *LabeledStmt) Pos() token.Pos { return s.Label.Pos() }
-func (s *ExprStmt) Pos() token.Pos    { return s.X.Pos() }
-func (s *AssignStmt) Pos() token.Pos  { return s.Lhs[0].Pos() }
-func (s *BlockStmt) Pos() token.Pos   { return s.Lbrace }
+func (s *BadStmt) Pos() token.Pos    { return s.From }
+func (s *DeclStmt) Pos() token.Pos   { return s.Decl.Pos() }
+func (s *EmptyStmt) Pos() token.Pos  { return s.Semicolon }
+func (s *ExprStmt) Pos() token.Pos   { return s.X.Pos() }
+func (s *AssignStmt) Pos() token.Pos { return s.Lhs.Pos() }
+func (s *BlockStmt) Pos() token.Pos  { return s.Lbrace }
 
 func (s *BadStmt) End() token.Pos  { return s.To }
 func (s *DeclStmt) End() token.Pos { return s.Decl.End() }
 func (s *EmptyStmt) End() token.Pos {
 	return s.Semicolon + 1 /* len(";") */
 }
-func (s *LabeledStmt) End() token.Pos { return s.Stmt.End() }
-func (s *ExprStmt) End() token.Pos    { return s.X.End() }
-func (s *AssignStmt) End() token.Pos  { return s.Rhs[len(s.Rhs)-1].End() }
-func (s *BlockStmt) End() token.Pos   { return s.Rbrace + 1 }
+func (s *ExprStmt) End() token.Pos   { return s.X.End() }
+func (s *AssignStmt) End() token.Pos { return s.Rhs.End() }
+func (s *BlockStmt) End() token.Pos  { return s.Rbrace + 1 }
 
 // stmtNode() ensures that only statement nodes can be
 // assigned to a StmtNode.
 //
-func (s *BadStmt) stmtNode()     {}
-func (s *DeclStmt) stmtNode()    {}
-func (s *EmptyStmt) stmtNode()   {}
-func (s *LabeledStmt) stmtNode() {}
-func (s *ExprStmt) stmtNode()    {}
-func (s *AssignStmt) stmtNode()  {}
-func (s *BlockStmt) stmtNode()   {}
+func (s *BadStmt) stmtNode()    {}
+func (s *DeclStmt) stmtNode()   {}
+func (s *EmptyStmt) stmtNode()  {}
+func (s *ExprStmt) stmtNode()   {}
+func (s *AssignStmt) stmtNode() {}
+func (s *BlockStmt) stmtNode()  {}
 
 // ----------------------------------------------------------------------------
 // Declarations

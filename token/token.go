@@ -40,7 +40,7 @@ const (
 
 	AND     // &
 	OR      // |
-	XOR     // ^
+	POW     // ^
 	SHL     // <<
 	SHR     // >>
 	AND_NOT // &^
@@ -144,7 +144,7 @@ var tokens = [...]string{
 
 	AND:     "&",
 	OR:      "|",
-	XOR:     "^",
+	POW:     "^",
 	SHL:     "<<",
 	SHR:     ">>",
 	AND_NOT: "&^",
@@ -264,10 +264,12 @@ func (op Token) Precedence() int {
 		return 2
 	case EQL, NEQ, LSS, LEQ, GTR, GEQ:
 		return 3
-	case ADD, SUB, OR, XOR:
+	case ADD, SUB, OR:
 		return 4
 	case MUL, QUO, REM, SHL, SHR, AND, AND_NOT:
 		return 5
+	case POW:
+		return 6
 	}
 	return LowestPrec
 }

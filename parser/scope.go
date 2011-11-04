@@ -121,10 +121,6 @@ func (obj *Object) Pos() token.Pos {
 		if d.Name.Name == name {
 			return d.Name.Pos()
 		}
-	case *LabeledStmt:
-		if d.Label.Name == name {
-			return d.Label.Pos()
-		}
 	}
 	return token.NoPos
 }
