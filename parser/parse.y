@@ -24,7 +24,7 @@ import (
 	file   File
 	id     *Ident
 	str    string
-	node   Node
+	lit    *BasicLit
 	exprs  []Expr
 	expr   Expr
 	stmt   Stmt
@@ -43,10 +43,11 @@ import (
 %type <tok>    top_type
 %type <block>  stmts
 %type <stmt>   stmt
-%type <expr>   expr number pair table lit expr_w_unit opt_kind initializer assignment
+%type <expr>   expr number pair table expr_w_unit opt_kind initializer assignment
 %type <exprs>  pairs expr_list initializers
 %type <decl>   var_decl def
 %type <decls>  defs
+%type <lit>    lit
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -65,8 +66,7 @@ file:	pkg
 	kinds
 	defs
 	{
-		*boosdlex.(*boosdLex).file = File{
-		}
+		*boosdlex.(*boosdLex).file = File{Decls:$4}
 	}
 ;
 
@@ -127,6 +127,11 @@ defs:	{}
 
 def:	ident top_type opt_kind callable specializes '{' stmts '}' ';'
 	{
+		if $2.val == "model" {
+			$$ = &ModelDecl{Name:$1, Body:$7}
+		} else {
+			$$ = &InterfaceDecl{Name:$1, Body:$7}
+		}
 	}
 ;
 

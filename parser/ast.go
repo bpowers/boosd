@@ -518,18 +518,18 @@ type (
 
 	// A FuncDecl node represents a function declaration.
 	InterfaceDecl struct {
-		Recv *FieldList // receiver (methods); or nil (functions)
-		Name *Ident     // function/method name
-		Type *ModelType // position of Func keyword, parameters and results
-		Body *BlockStmt // function body; or nil (forward declaration)
+		Name  *Ident     // function/method name
+		Units *BasicLit  // position of Func keyword, parameters and results
+		Body  *BlockStmt // function body; or nil (forward declaration)
 	}
 
 	// A FuncDecl node represents a function declaration.
 	ModelDecl struct {
-		Recv *FieldList // receiver (methods); or nil (functions)
-		Name *Ident     // function/method name
-		Type *ModelType // position of Func keyword, parameters and results
-		Body *BlockStmt // function body; or nil (forward declaration)
+		Recv  *FieldList // receiver (methods); or nil (functions)
+		Name  *Ident     // function/method name
+		Super *Ident     // function/method name
+		Units *BasicLit  // position of Func keyword, parameters and results
+		Body  *BlockStmt // function body; or nil (forward declaration)
 	}
 )
 
@@ -538,8 +538,8 @@ type (
 func (d *BadDecl) Pos() token.Pos       { return d.From }
 func (d *GenDecl) Pos() token.Pos       { return d.TokPos }
 func (d *VarDecl) Pos() token.Pos       { return d.Name.Pos() }
-func (d *InterfaceDecl) Pos() token.Pos { return d.Type.Pos() }
-func (d *ModelDecl) Pos() token.Pos     { return d.Type.Pos() }
+func (d *InterfaceDecl) Pos() token.Pos { return d.Name.Pos() }
+func (d *ModelDecl) Pos() token.Pos     { return d.Name.Pos() }
 
 func (d *BadDecl) End() token.Pos { return d.To }
 func (d *VarDecl) End() token.Pos { return d.Name.End() } // FIXME
@@ -549,18 +549,8 @@ func (d *GenDecl) End() token.Pos {
 	}
 	return d.Specs[0].End()
 }
-func (d *InterfaceDecl) End() token.Pos {
-	if d.Body != nil {
-		return d.Body.End()
-	}
-	return d.Type.End()
-}
-func (d *ModelDecl) End() token.Pos {
-	if d.Body != nil {
-		return d.Body.End()
-	}
-	return d.Type.End()
-}
+func (d *InterfaceDecl) End() token.Pos { return d.Body.End() }
+func (d *ModelDecl) End() token.Pos     { return d.Body.End() }
 
 // declNode() ensures that only declaration nodes can be
 // assigned to a DeclNode.

@@ -1,7 +1,5 @@
 package simple
 
-import "kinds"
-
 Population model `Individuals` {
         initial_population
 
