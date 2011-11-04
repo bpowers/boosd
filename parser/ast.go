@@ -350,7 +350,7 @@ type (
 	// a short variable declaration.
 	//
 	AssignStmt struct {
-		Lhs    Expr
+		Lhs    Decl
 		TokPos token.Pos   // position of Tok
 		Tok    token.Token // assignment token, DEFINE
 		Rhs    Expr

@@ -81,6 +81,19 @@ func Walk(v Visitor, node Node) {
 		}
 		walkExprList(v, n.Elts)
 
+	case *UnitExpr:
+		Walk(v, n.X)
+		if n.Unit != nil {
+			Walk(v, n.Unit)
+		}
+
+	case *TableExpr:
+		walkExprList(v, n.Pairs)
+
+	case *PairExpr:
+		Walk(v, n.X)
+		Walk(v, n.Y)
+
 	case *ParenExpr:
 		Walk(v, n.X)
 
@@ -143,6 +156,15 @@ func Walk(v Visitor, node Node) {
 	case *GenDecl:
 		for _, s := range n.Specs {
 			Walk(v, s)
+		}
+
+	case *VarDecl:
+		Walk(v, n.Name)
+		if n.Type != nil {
+			Walk(v, n.Type)
+		}
+		if n.Units != nil {
+			Walk(v, n.Units)
 		}
 
 	case *InterfaceDecl:

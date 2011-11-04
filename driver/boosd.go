@@ -4,6 +4,7 @@ import (
 	"boosd/parser"
 	"bufio"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -33,4 +34,14 @@ func main() {
 	// and parse
 	f := parser.Parse(string(units))
 	log.Printf("compilationUnit: %#v\n", f)
+	indent := ""
+	parser.Inspect(f, func(n parser.Node) bool {
+		if n == nil {
+			indent = indent[:len(indent) - 2]
+		} else {
+			indent += "  "
+			fmt.Printf("%s%#v\n", indent, n)
+		}
+		return true
+	})
 }

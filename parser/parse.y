@@ -161,7 +161,7 @@ specializes: {}
 
 
 stmts:	{
-		$$ = &BlockStmt{List:make([]Stmt, 2)}
+		$$ = &BlockStmt{List:[]Stmt{}}
 	}
 |	stmts stmt
 	{
@@ -172,10 +172,11 @@ stmts:	{
 
 stmt:	var_decl ';'
 	{
+		$$ = &DeclStmt{$1}
 	}
 |	var_decl assignment ';'
 	{
-		$$ = &AssignStmt{}
+		$$ = &AssignStmt{Lhs:$1, Rhs:$2}
 	}
 ;
 
