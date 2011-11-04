@@ -9,6 +9,7 @@
 package main
 
 import (
+	"boosd/token"
 	"fmt"
 )
 
@@ -17,8 +18,6 @@ import (
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
-	kinds  []kind
-	kind   kind
 	tok    tok
 	strs   []string
 	ids    []*Ident
@@ -28,6 +27,7 @@ import (
 	mdl    mdl
 	models []mdl
 	node   Node
+	exprs  []Expr
 	expr   Expr
 	stmt   Stmt
 	block  *BlockStmt
@@ -35,19 +35,18 @@ import (
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-%type <kind>   kind
-%type <kinds>  kinds
 %type <strs>   imports
 %type <ids>    id_list callable
 %type <file>   file
 %type <str>    pkg import opt_kind
 %type <mdl>    def
 %type <models> defs
-%type <node>   expr
 %type <id>     ident specializes
 %type <tok>    top_type lit
 %type <block>  stmts
 %type <stmt>   stmt
+%type <expr>   expr number pair table
+%type <exprs>  pairs
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -93,13 +92,11 @@ import:	YIMPORT lit ';'
 kinds:	{}
 |	kinds kind
 	{
-		$$ = append($1, $2)
 	}
 ;
 
 kind:	YKIND id_list opt_kind ';'
 	{
-		$$  =  kind{}
 	}
 ;
 
@@ -235,9 +232,13 @@ expr:	'(' expr ')'
 |	table
 	{}
 |	ident
-	{}
+	{
+		$$ = $1
+	}
 |	number
-	{}
+	{
+		$$ = $1
+	}
 ;
 
 ident:	YIDENT
@@ -253,6 +254,7 @@ lit:	YLITERAL
 
 number:	YNUMBER
 	{
+		$$ = &BasicLit{Kind:token.FLOAT, Value:$1.val}
 	}
 ;
 
@@ -266,19 +268,24 @@ expr_list: expr
 
 table:	'[' pairs ']'
 	{
+		$$ = &TableExpr{Pairs: $2}
 	}
 ;
 
 pairs:	pair
 	{
+		$$ = make([]Expr, 1, 16)
+		$$[0] = $1
 	}
 |	pairs ',' pair
 	{
+		$$ = append($1, $3)
 	}
 ;
 
 pair:	'(' number ',' number ')'
 	{
+		$$ = &PairExpr{$2, $4}
 	}
 ;
 

@@ -127,6 +127,12 @@ type (
 		X     Expr        // operand
 	}
 
+	// A PairExpr node represents a pair in a table expression.
+	PairExpr struct {
+		X Expr // left operand
+		Y Expr // right operand
+	}
+
 	// A BinaryExpr node represents a binary expression.
 	BinaryExpr struct {
 		X     Expr        // left operand
@@ -147,6 +153,13 @@ type (
 		Key   Expr
 		Colon token.Pos // position of ":"
 		Value Expr
+	}
+
+	// A CallExpr node represents an expression followed by an argument list.
+	TableExpr struct {
+		Lbrack token.Pos
+		Pairs  []Expr // function arguments; or nil
+		Rbrack token.Pos
 	}
 )
 
@@ -243,6 +256,8 @@ func (x *IndexExpr) Pos() token.Pos     { return x.X.Pos() }
 func (x *CallExpr) Pos() token.Pos      { return x.Fun.Pos() }
 func (x *UnaryExpr) Pos() token.Pos     { return x.OpPos }
 func (x *BinaryExpr) Pos() token.Pos    { return x.X.Pos() }
+func (x *PairExpr) Pos() token.Pos      { return x.X.Pos() }
+func (x *TableExpr) Pos() token.Pos     { return x.Lbrack }
 func (x *UnitExpr) Pos() token.Pos      { return x.X.Pos() }
 func (x *KeyValueExpr) Pos() token.Pos  { return x.Key.Pos() }
 func (x *ModelType) Pos() token.Pos     { return x.Model }
@@ -257,6 +272,8 @@ func (x *IndexExpr) End() token.Pos     { return x.Rbrack + 1 }
 func (x *CallExpr) End() token.Pos      { return x.Rparen + 1 }
 func (x *UnaryExpr) End() token.Pos     { return x.X.End() }
 func (x *BinaryExpr) End() token.Pos    { return x.Y.End() }
+func (x *TableExpr) End() token.Pos     { return x.Rbrack + 1 }
+func (x *PairExpr) End() token.Pos      { return x.Y.End() }
 func (x *UnitExpr) End() token.Pos      { return x.Unit.End() }
 func (x *KeyValueExpr) End() token.Pos  { return x.Value.End() }
 func (x *ModelType) End() token.Pos     { return x.Fields.End() }
@@ -274,6 +291,8 @@ func (x *IndexExpr) exprNode()    {}
 func (x *CallExpr) exprNode()     {}
 func (x *UnaryExpr) exprNode()    {}
 func (x *BinaryExpr) exprNode()   {}
+func (x *TableExpr) exprNode()    {}
+func (x *PairExpr) exprNode()     {}
 func (x *UnitExpr) exprNode()     {}
 func (x *KeyValueExpr) exprNode() {}
 
