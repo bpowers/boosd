@@ -5,8 +5,8 @@
 package parser
 
 import (
-	"fmt"
 	"boosd/token"
+	"fmt"
 	"io"
 	"sort"
 )

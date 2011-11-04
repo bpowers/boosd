@@ -7,9 +7,9 @@
 package parser
 
 import (
+	"boosd/token"
 	"bytes"
 	"fmt"
-	"boosd/token"
 )
 
 // A Scope maintains the set of named language entities declared

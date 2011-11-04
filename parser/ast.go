@@ -17,7 +17,6 @@ const (
 	ObjString
 )
 
-
 // ----------------------------------------------------------------------------
 // Interfaces
 //
@@ -70,30 +69,30 @@ type (
 
 	// An Ident node represents an identifier.
 	Ident struct {
-		NamePos token.Pos     // identifier position
-		Name    string  // identifier name
-		Obj     *Object // denoted object; or nil
+		NamePos token.Pos // identifier position
+		Name    string    // identifier name
+		Obj     *Object   // denoted object; or nil
 	}
 	// A BasicLit node represents a literal of basic type.
 	BasicLit struct {
-		ValuePos token.Pos    // literal position
-		Kind     token.Token  // token.INT, token.FLOAT, token.IMAG, token.CHAR, or token.STRING
-		Value    string // literal string; e.g. 42, 0x7f, 3.14, 1e-9, 2.4i, 'a', '\x7f', "foo" or `\m\n\o`
+		ValuePos token.Pos   // literal position
+		Kind     token.Token // token.INT, token.FLOAT, token.IMAG, token.CHAR, or token.STRING
+		Value    string      // literal string; e.g. 42, 0x7f, 3.14, 1e-9, 2.4i, 'a', '\x7f', "foo" or `\m\n\o`
 	}
 
 	// A CompositeLit node represents a composite literal.
 	CompositeLit struct {
-		Type   Expr   // literal type; or nil
-		Lbrace token.Pos    // position of "{"
-		Elts   []Expr // list of composite elements; or nil
-		Rbrace token.Pos    // position of "}"
+		Type   Expr      // literal type; or nil
+		Lbrace token.Pos // position of "{"
+		Elts   []Expr    // list of composite elements; or nil
+		Rbrace token.Pos // position of "}"
 	}
 
 	// A ParenExpr node represents a parenthesized expression.
 	ParenExpr struct {
-		Lparen token.Pos  // position of "("
-		X      Expr // parenthesized expression
-		Rparen token.Pos  // position of ")"
+		Lparen token.Pos // position of "("
+		X      Expr      // parenthesized expression
+		Rparen token.Pos // position of ")"
 	}
 
 	// A SelectorExpr node represents an expression followed by a selector.
@@ -104,19 +103,19 @@ type (
 
 	// An IndexExpr node represents an expression followed by an index.
 	IndexExpr struct {
-		X      Expr // expression
-		Lbrack token.Pos  // position of "["
-		Index  Expr // index expression
-		Rbrack token.Pos  // position of "]"
+		X      Expr      // expression
+		Lbrack token.Pos // position of "["
+		Index  Expr      // index expression
+		Rbrack token.Pos // position of "]"
 	}
 
 	// A CallExpr node represents an expression followed by an argument list.
 	CallExpr struct {
-		Fun      Expr   // function expression
-		Lparen   token.Pos    // position of "("
-		Args     []Expr // function arguments; or nil
-		Ellipsis token.Pos    // position of "...", if any
-		Rparen   token.Pos    // position of ")"
+		Fun      Expr      // function expression
+		Lparen   token.Pos // position of "("
+		Args     []Expr    // function arguments; or nil
+		Ellipsis token.Pos // position of "...", if any
+		Rparen   token.Pos // position of ")"
 	}
 
 	// A UnaryExpr node represents a unary expression.
@@ -125,15 +124,15 @@ type (
 	UnaryExpr struct {
 		OpPos token.Pos   // position of Op
 		Op    token.Token // operator
-		X     Expr  // operand
+		X     Expr        // operand
 	}
 
 	// A BinaryExpr node represents a binary expression.
 	BinaryExpr struct {
-		X     Expr  // left operand
+		X     Expr        // left operand
 		OpPos token.Pos   // position of Op
 		Op    token.Token // operator
-		Y     Expr  // right operand
+		Y     Expr        // right operand
 	}
 
 	UnitExpr struct {
@@ -158,14 +157,14 @@ type (
 type (
 	// A ModelType node represents a model type.
 	ModelType struct {
-		Model      token.Pos        // position of "struct" keyword
+		Model      token.Pos  // position of "struct" keyword
 		Fields     *FieldList // list of field declarations
 		Incomplete bool       // true if (source) fields are missing in the Fields list
 	}
 
 	// An InterfaceType node represents an interface type.
 	InterfaceType struct {
-		Interface  token.Pos        // position of "interface" keyword
+		Interface  token.Pos  // position of "interface" keyword
 		Methods    *FieldList // list of methods
 		Incomplete bool       // true if (source) methods are missing in the Methods list
 	}
@@ -201,9 +200,9 @@ func (f *Field) End() token.Pos {
 
 // A FieldList represents a list of Fields, enclosed by parentheses or braces.
 type FieldList struct {
-	Opening token.Pos      // position of opening parenthesis/brace, if any
-	List    []*Field // field list; or nil
-	Closing token.Pos      // position of closing parenthesis/brace, if any
+	Opening token.Pos // position of opening parenthesis/brace, if any
+	List    []*Field  // field list; or nil
+	Closing token.Pos // position of closing parenthesis/brace, if any
 }
 
 func (f *FieldList) Pos() token.Pos {
@@ -258,7 +257,7 @@ func (x *IndexExpr) End() token.Pos     { return x.Rbrack + 1 }
 func (x *CallExpr) End() token.Pos      { return x.Rparen + 1 }
 func (x *UnaryExpr) End() token.Pos     { return x.X.End() }
 func (x *BinaryExpr) End() token.Pos    { return x.Y.End() }
-func (x *UnitExpr) End() token.Pos    { return x.Unit.End() }
+func (x *UnitExpr) End() token.Pos      { return x.Unit.End() }
 func (x *KeyValueExpr) End() token.Pos  { return x.Value.End() }
 func (x *ModelType) End() token.Pos     { return x.Fields.End() }
 func (x *InterfaceType) End() token.Pos { return x.Methods.End() }
@@ -318,7 +317,6 @@ var noPos token.Pos
 // Useful for ASTs generated by code other than the Go parser.
 //
 func NewIdent(name string) *Ident { return &Ident{noPos, name, nil} }
-
 
 // ----------------------------------------------------------------------------
 // Statements
@@ -380,16 +378,15 @@ type (
 	}
 )
 
-
 // Pos and End implementations for statement nodes.
 //
-func (s *BadStmt) Pos() token.Pos        { return s.From }
-func (s *DeclStmt) Pos() token.Pos       { return s.Decl.Pos() }
-func (s *EmptyStmt) Pos() token.Pos      { return s.Semicolon }
-func (s *LabeledStmt) Pos() token.Pos    { return s.Label.Pos() }
-func (s *ExprStmt) Pos() token.Pos       { return s.X.Pos() }
-func (s *AssignStmt) Pos() token.Pos     { return s.Lhs[0].Pos() }
-func (s *BlockStmt) Pos() token.Pos      { return s.Lbrace }
+func (s *BadStmt) Pos() token.Pos     { return s.From }
+func (s *DeclStmt) Pos() token.Pos    { return s.Decl.Pos() }
+func (s *EmptyStmt) Pos() token.Pos   { return s.Semicolon }
+func (s *LabeledStmt) Pos() token.Pos { return s.Label.Pos() }
+func (s *ExprStmt) Pos() token.Pos    { return s.X.Pos() }
+func (s *AssignStmt) Pos() token.Pos  { return s.Lhs[0].Pos() }
+func (s *BlockStmt) Pos() token.Pos   { return s.Lbrace }
 
 func (s *BadStmt) End() token.Pos  { return s.To }
 func (s *DeclStmt) End() token.Pos { return s.Decl.End() }
@@ -398,19 +395,19 @@ func (s *EmptyStmt) End() token.Pos {
 }
 func (s *LabeledStmt) End() token.Pos { return s.Stmt.End() }
 func (s *ExprStmt) End() token.Pos    { return s.X.End() }
-func (s *AssignStmt) End() token.Pos { return s.Rhs[len(s.Rhs)-1].End() }
-func (s *BlockStmt) End() token.Pos { return s.Rbrace + 1 }
+func (s *AssignStmt) End() token.Pos  { return s.Rhs[len(s.Rhs)-1].End() }
+func (s *BlockStmt) End() token.Pos   { return s.Rbrace + 1 }
 
 // stmtNode() ensures that only statement nodes can be
 // assigned to a StmtNode.
 //
-func (s *BadStmt) stmtNode()        {}
-func (s *DeclStmt) stmtNode()       {}
-func (s *EmptyStmt) stmtNode()      {}
-func (s *LabeledStmt) stmtNode()    {}
-func (s *ExprStmt) stmtNode()       {}
-func (s *AssignStmt) stmtNode()     {}
-func (s *BlockStmt) stmtNode()      {}
+func (s *BadStmt) stmtNode()     {}
+func (s *DeclStmt) stmtNode()    {}
+func (s *EmptyStmt) stmtNode()   {}
+func (s *LabeledStmt) stmtNode() {}
+func (s *ExprStmt) stmtNode()    {}
+func (s *AssignStmt) stmtNode()  {}
+func (s *BlockStmt) stmtNode()   {}
 
 // ----------------------------------------------------------------------------
 // Declarations
@@ -427,18 +424,18 @@ type (
 
 	// An ImportSpec node represents a single package import.
 	ImportSpec struct {
-		Name    *Ident        // local package name (including "."); or nil
-		Path    *BasicLit     // import path
-		EndPos  token.Pos     // end of spec (overrides Path.Pos if nonzero)
+		Name   *Ident    // local package name (including "."); or nil
+		Path   *BasicLit // import path
+		EndPos token.Pos // end of spec (overrides Path.Pos if nonzero)
 	}
 
 	// A ValueSpec node represents a constant or variable declaration
 	// (ConstSpec or VarSpec production).
 	//
 	KindSpec struct {
-		Names   []*Ident      // value names (len(Names) > 0)
-		Type    Expr          // value type; or nil
-		Values  []Expr        // initial values; or nil
+		Names  []*Ident // value names (len(Names) > 0)
+		Type   Expr     // value type; or nil
+		Values []Expr   // initial values; or nil
 	}
 )
 
@@ -498,36 +495,36 @@ type (
 	//	token.VAR     *ValueSpec
 	//
 	GenDecl struct {
-		TokPos token.Pos     // position of Tok
-		Tok    token.Token   // IMPORT, CONST, TYPE, VAR
-		Lparen token.Pos     // position of '(', if any
+		TokPos token.Pos   // position of Tok
+		Tok    token.Token // IMPORT, CONST, TYPE, VAR
+		Lparen token.Pos   // position of '(', if any
 		Specs  []Spec
 		Rparen token.Pos // position of ')', if any
 	}
 
 	// A FuncDecl node represents a function declaration.
 	InterfaceDecl struct {
-		Recv *FieldList    // receiver (methods); or nil (functions)
-		Name *Ident        // function/method name
-		Type *ModelType     // position of Func keyword, parameters and results
-		Body *BlockStmt    // function body; or nil (forward declaration)
+		Recv *FieldList // receiver (methods); or nil (functions)
+		Name *Ident     // function/method name
+		Type *ModelType // position of Func keyword, parameters and results
+		Body *BlockStmt // function body; or nil (forward declaration)
 	}
 
 	// A FuncDecl node represents a function declaration.
 	ModelDecl struct {
-		Recv *FieldList    // receiver (methods); or nil (functions)
-		Name *Ident        // function/method name
-		Type *ModelType     // position of Func keyword, parameters and results
-		Body *BlockStmt    // function body; or nil (forward declaration)
+		Recv *FieldList // receiver (methods); or nil (functions)
+		Name *Ident     // function/method name
+		Type *ModelType // position of Func keyword, parameters and results
+		Body *BlockStmt // function body; or nil (forward declaration)
 	}
 )
 
 // Pos and End implementations for declaration nodes.
 //
-func (d *BadDecl) Pos() token.Pos  { return d.From }
-func (d *GenDecl) Pos() token.Pos  { return d.TokPos }
+func (d *BadDecl) Pos() token.Pos       { return d.From }
+func (d *GenDecl) Pos() token.Pos       { return d.TokPos }
 func (d *InterfaceDecl) Pos() token.Pos { return d.Type.Pos() }
-func (d *ModelDecl) Pos() token.Pos { return d.Type.Pos() }
+func (d *ModelDecl) Pos() token.Pos     { return d.Type.Pos() }
 
 func (d *BadDecl) End() token.Pos { return d.To }
 func (d *GenDecl) End() token.Pos {
@@ -552,10 +549,10 @@ func (d *ModelDecl) End() token.Pos {
 // declNode() ensures that only declaration nodes can be
 // assigned to a DeclNode.
 //
-func (d *BadDecl) declNode()  {}
-func (d *GenDecl) declNode()  {}
+func (d *BadDecl) declNode()       {}
+func (d *GenDecl) declNode()       {}
 func (d *InterfaceDecl) declNode() {}
-func (d *ModelDecl) declNode() {}
+func (d *ModelDecl) declNode()     {}
 
 // ----------------------------------------------------------------------------
 // Files and packages
@@ -567,12 +564,12 @@ func (d *ModelDecl) declNode() {}
 // via Doc and Comment fields.
 //
 type File struct {
-	Package    token.Pos       // position of "package" keyword
-	Name       *Ident          // package name
-	Decls      []Decl          // top-level declarations; or nil
-	Scope      *Scope          // package scope (this file only)
-	Imports    []*ImportSpec   // imports in this file
-	Unresolved []*Ident        // unresolved identifiers in this file
+	Package    token.Pos     // position of "package" keyword
+	Name       *Ident        // package name
+	Decls      []Decl        // top-level declarations; or nil
+	Scope      *Scope        // package scope (this file only)
+	Imports    []*ImportSpec // imports in this file
+	Unresolved []*Ident      // unresolved identifiers in this file
 }
 
 func (f *File) Pos() token.Pos { return f.Package }
