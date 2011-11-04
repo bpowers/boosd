@@ -241,6 +241,7 @@ func (f *FieldList) End() token.Pos {
 	return token.NoPos
 }
 
+func (x *BadExpr) Pos() token.Pos  { return x.From }
 func (x *Ident) Pos() token.Pos    { return x.NamePos }
 func (x *BasicLit) Pos() token.Pos { return x.ValuePos }
 func (x *CompositeLit) Pos() token.Pos {
@@ -262,6 +263,7 @@ func (x *KeyValueExpr) Pos() token.Pos  { return x.Key.Pos() }
 func (x *ModelType) Pos() token.Pos     { return x.Model }
 func (x *InterfaceType) Pos() token.Pos { return x.Interface }
 
+func (x *BadExpr) End() token.Pos       { return x.To + 1 }
 func (x *Ident) End() token.Pos         { return token.Pos(int(x.NamePos) + len(x.Name)) }
 func (x *BasicLit) End() token.Pos      { return token.Pos(int(x.ValuePos) + len(x.Value)) }
 func (x *CompositeLit) End() token.Pos  { return x.Rbrace + 1 }
@@ -281,6 +283,7 @@ func (x *InterfaceType) End() token.Pos { return x.Methods.End() }
 // exprNode() ensures that only expression/type nodes can be
 // assigned to an ExprNode.
 //
+func (x *BadExpr) exprNode()      {}
 func (x *Ident) exprNode()        {}
 func (x *BasicLit) exprNode()     {}
 func (x *CompositeLit) exprNode() {}
@@ -297,34 +300,6 @@ func (x *KeyValueExpr) exprNode() {}
 
 func (x *ModelType) exprNode()     {}
 func (x *InterfaceType) exprNode() {}
-
-// A Visitor's Visit method is invoked for each node encountered by Walk.
-// If the result visitor w is not nil, Walk visits each of the children
-// of node with the visitor w, followed by a call of w.Visit(nil).
-type Visitor interface {
-	Visit(node Node) (w Visitor)
-}
-
-// Walk traverses an AST in depth-first order: It starts by calling
-// v.Visit(node); node must not be nil. If the visitor w returned by
-// v.Visit(node) is not nil, Walk is invoked recursively with visitor
-// w for each of the non-nil children of node, followed by a call of
-// w.Visit(nil).
-//
-// based off Go's AST walk in pkg/go/ast
-func Walk(v Visitor, node Node) {
-	if v = v.Visit(node); v == nil {
-		return
-	}
-
-	// walk children
-	switch n := node.(type) {
-	case *BinaryExpr:
-		Walk(v, n.X)
-	}
-
-	v.Visit(nil)
-}
 
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents
@@ -519,6 +494,7 @@ type (
 	// A FuncDecl node represents a function declaration.
 	InterfaceDecl struct {
 		Name  *Ident     // function/method name
+		Super *Ident     // function/method name
 		Units *BasicLit  // position of Func keyword, parameters and results
 		Body  *BlockStmt // function body; or nil (forward declaration)
 	}

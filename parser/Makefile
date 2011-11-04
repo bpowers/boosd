@@ -9,6 +9,7 @@ GOFILES = \
 	scope.go\
 	resolve.go\
 	errors.go\
+	walk.go\
 
 CLEANFILES += \
 	parse.go\
