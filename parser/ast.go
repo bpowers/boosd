@@ -136,6 +136,11 @@ type (
 		Y     Expr  // right operand
 	}
 
+	UnitExpr struct {
+		X    Expr // the expression
+		Unit Expr // the expression's units
+	}
+
 	// A KeyValueExpr node represents (key : value) pairs
 	// in composite literals.
 	//
@@ -239,6 +244,7 @@ func (x *IndexExpr) Pos() token.Pos     { return x.X.Pos() }
 func (x *CallExpr) Pos() token.Pos      { return x.Fun.Pos() }
 func (x *UnaryExpr) Pos() token.Pos     { return x.OpPos }
 func (x *BinaryExpr) Pos() token.Pos    { return x.X.Pos() }
+func (x *UnitExpr) Pos() token.Pos      { return x.X.Pos() }
 func (x *KeyValueExpr) Pos() token.Pos  { return x.Key.Pos() }
 func (x *ModelType) Pos() token.Pos     { return x.Model }
 func (x *InterfaceType) Pos() token.Pos { return x.Interface }
@@ -252,6 +258,7 @@ func (x *IndexExpr) End() token.Pos     { return x.Rbrack + 1 }
 func (x *CallExpr) End() token.Pos      { return x.Rparen + 1 }
 func (x *UnaryExpr) End() token.Pos     { return x.X.End() }
 func (x *BinaryExpr) End() token.Pos    { return x.Y.End() }
+func (x *UnitExpr) End() token.Pos    { return x.Unit.End() }
 func (x *KeyValueExpr) End() token.Pos  { return x.Value.End() }
 func (x *ModelType) End() token.Pos     { return x.Fields.End() }
 func (x *InterfaceType) End() token.Pos { return x.Methods.End() }
@@ -268,6 +275,7 @@ func (x *IndexExpr) exprNode()    {}
 func (x *CallExpr) exprNode()     {}
 func (x *UnaryExpr) exprNode()    {}
 func (x *BinaryExpr) exprNode()   {}
+func (x *UnitExpr) exprNode()     {}
 func (x *KeyValueExpr) exprNode() {}
 
 func (x *ModelType) exprNode()     {}

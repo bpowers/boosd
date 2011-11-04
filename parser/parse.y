@@ -21,14 +21,16 @@ import (
 	kind   kind
 	tok    tok
 	strs   []string
-	ids    []Ident
+	ids    []*Ident
 	file   File
-	id     Ident
+	id     *Ident
 	str    string
 	mdl    mdl
 	models []mdl
 	node   Node
 	expr   Expr
+	stmt   Stmt
+	block  *BlockStmt
 }
 
 // any non-terminal which returns a value needs a type, which is
@@ -44,6 +46,8 @@ import (
 %type <node>   expr
 %type <id>     ident specializes
 %type <tok>    top_type lit
+%type <block>  stmts
+%type <stmt>   stmt
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
@@ -110,7 +114,7 @@ opt_kind: {
 
 id_list: ident
 	{
-		$$ = []Ident{$1}
+		$$ = []*Ident{$1}
 	}
 |	id_list ',' ident
 	{
@@ -155,9 +159,13 @@ specializes: {}
 ;
 
 
-stmts:	{}
+stmts:	{
+		$$ = &BlockStmt{List:make([]Stmt, 2)}
+	}
 |	stmts stmt
 	{
+		$$ = $1
+		$$.List = append($1.List, $2)
 	}
 ;
 
@@ -234,7 +242,7 @@ expr:	'(' expr ')'
 
 ident:	YIDENT
 	{
-		$$ = Ident{Name:$1.val}
+		$$ = &Ident{Name:$1.val}
 	}
 ;
 
