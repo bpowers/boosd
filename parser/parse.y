@@ -59,14 +59,14 @@ import (
 %left '^'
 %left UMINUS      /*  supplies  precedence  for  unary  minus  */
 %left FN_CALL
+
 %%
 
-file:	pkg
-	imports
+file:	imports
 	kinds
 	defs
 	{
-		*boosdlex.(*boosdLex).file = File{Decls:$4}
+		*boosdlex.(*boosdLex).file = File{Decls:$3}
 	}
 ;
 

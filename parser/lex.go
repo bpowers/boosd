@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 	"unicode"
-	"utf8"
+	"unicode/utf8"
 )
 
 const eof = 0
@@ -300,5 +300,5 @@ func isIdentifierStart(r int) bool {
 
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
 func isAlphaNumeric(r int) bool {
-	return !(unicode.IsSpace(r) || isOperator(r))
+	return !(unicode.IsSpace(r) || isOperator(r) || r == ';')
 }
