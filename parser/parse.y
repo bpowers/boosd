@@ -36,7 +36,7 @@ import (
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
 %type <strs>   imports
-%type <ids>    id_list callable
+%type <ids>    id_list
 %type <file>   file
 %type <str>    pkg import
 %type <id>     ident specializes
@@ -51,7 +51,7 @@ import (
 
 // same for terminals
 %token <tok> YIMPORT YKIND YKIND_DECL YPACKAGE
-%token <tok> YCALLABLE YSPECIALIZES YINTERFACE YMODEL
+%token <tok> YSPECIALIZES YINTERFACE YMODEL
 %token <tok> YIDENT YLITERAL YNUMBER
 
 %left '+'  '-'
@@ -125,7 +125,7 @@ defs:	{}
 	}
 ;
 
-def:	ident top_type opt_kind callable specializes '{' stmts '}' ';'
+def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 	{
 		if $2.val == "model" {
 			$$ = &ModelDecl{Name:$1, Body:$7}
@@ -142,13 +142,6 @@ top_type: YMODEL
 |	YINTERFACE
 	{
 		$$ = $1
-	}
-;
-
-callable: {}
-|	YCALLABLE '(' id_list ')'
-	{
-		$$ = $3
 	}
 ;
 

@@ -4,12 +4,10 @@ Population model `Individuals` {
         birth_rate `1/time`
         average_lifespan `time`
 
-	migrations flow
         births flow     = population * birth_rate
         deaths flow     = population / avg_lifespan
 
         population stock = {
-		biflow:  migrations
                 inflow:  births
 		outflow: deaths
                 initial: initial_population
@@ -23,6 +21,7 @@ RabbitPopulation model `Rabbits` specializes Population {
         initial_population = 500 `Rabbits`
         birth_rate         = 2 `Rabbits/year`
         avg_lifespan       = 2 `years`
+        crowding           = population/carrying_capacity
 
         effect_on_deaths table `dmnl` = [(0, 0.75), (3, 2.5), (6, 6), (8, 11), (10, 20)]
 
@@ -58,8 +57,6 @@ RabbitFox model {
                 dt:        .5 `months`
                 save_step: 1  `year`
         }
-
-	time_in_secs `kilorabbits` = time
 
         crowding_effect = [(0, 0), (1, 1), (2, 2), (6, 2)][rabbits.crowding]
 

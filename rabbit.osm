@@ -62,6 +62,24 @@ model CascadedLevels specializes Tub {
 	level = level1 + level2 + level3
 }
 
+SmoothN model {
+	n      const `dmnl`
+	inflow flow
+	delay  aux   `time`
+
+	rates  [n+1]flow = {
+		rates[0]:  inflow
+		rates[1:]: levels[i]/delay
+	}
+
+	levels [n]stock = {
+		inflow:  rates[i]
+		outflow: rates[i+1]
+	}
+
+	smoothn = levels[n-1]
+}
+
 // a set of levels, where one level's outflow is the inflow to the
 // next level, etc. A cascade is an n-length series of material
 // delays.
