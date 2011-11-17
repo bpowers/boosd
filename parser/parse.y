@@ -38,7 +38,7 @@ import (
 %type <strs>   imports
 %type <ids>    id_list
 %type <file>   file
-%type <str>    pkg import
+%type <str>    import
 %type <id>     ident specializes
 %type <tok>    top_type
 %type <block>  stmts
@@ -67,12 +67,6 @@ file:	imports
 	defs
 	{
 		*boosdlex.(*boosdLex).file = File{Decls:$3}
-	}
-;
-
-pkg:	YPACKAGE YIDENT ';'
-	{
-		$$ = $2.val
 	}
 ;
 
@@ -128,9 +122,9 @@ defs:	{}
 def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 	{
 		if $2.val == "model" {
-			$$ = &ModelDecl{Name:$1, Body:$7}
+			$$ = &ModelDecl{Name:$1, Body:$6}
 		} else {
-			$$ = &InterfaceDecl{Name:$1, Body:$7}
+			$$ = &InterfaceDecl{Name:$1, Body:$6}
 		}
 	}
 ;

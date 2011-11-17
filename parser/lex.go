@@ -276,8 +276,6 @@ func lexIdentifier(l *boosdLex) stateFn {
 		l.emit(YMODEL, itemKeyword)
 	case id == "interface":
 		l.emit(YINTERFACE, itemKeyword)
-	case id == "callable":
-		l.emit(YCALLABLE, itemKeyword)
 	case id == "specializes":
 		l.emit(YSPECIALIZES, itemKeyword)
 	default:

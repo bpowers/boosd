@@ -83,7 +83,7 @@ SmoothN model {
 // a set of levels, where one level's outflow is the inflow to the
 // next level, etc. A cascade is an n-length series of material
 // delays.
-model CascadedN callable(n, rate, inflow) specializes Tub {
+model CascadedN specializes Tub {
 	n      const `dmnl`
 	rate   aux   `time`
 	inflow flow
