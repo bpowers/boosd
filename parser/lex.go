@@ -85,21 +85,21 @@ func (l *boosdLex) Error(s string) {
 	fmt.Printf("syntax error: %s\n", s)
 }
 
-func (l *boosdLex) next() int {
+func (l *boosdLex) next() rune {
 	if l.pos >= len(l.s) {
 		return 0
 	}
-	rune, width := utf8.DecodeRuneInString(l.s[l.pos:])
+	r, width := utf8.DecodeRuneInString(l.s[l.pos:])
 	l.pos += width
 	l.width = width
-	return rune
+	return r
 }
 
 func (l *boosdLex) backup() {
 	l.pos -= l.width
 }
 
-func (l *boosdLex) peek() int {
+func (l *boosdLex) peek() rune {
 	peek := l.next()
 	l.backup()
 	return peek
@@ -123,8 +123,8 @@ func (l *boosdLex) acceptRun(valid string) {
 	l.backup()
 }
 
-func (l *boosdLex) emit(yyTy int, ty itemType) {
-	t := tok{val: l.s[l.start:l.pos], yyKind: yyTy, kind: ty}
+func (l *boosdLex) emit(yyTy rune, ty itemType) {
+	t := tok{val: l.s[l.start:l.pos], yyKind: int(yyTy), kind: ty}
 	//log.Printf("t: %#v\n", t)
 	l.items <- t
 	l.ignore()
@@ -284,19 +284,19 @@ func lexIdentifier(l *boosdLex) stateFn {
 	return lexStatement
 }
 
-func isLiteralStart(r int) bool {
+func isLiteralStart(r rune) bool {
 	return r == '"'
 }
 
-func isOperator(rune int) bool {
-	return bytes.IndexRune([]byte(",+-*/|&=(){}[]:"), rune) > -1
+func isOperator(r rune) bool {
+	return bytes.IndexRune([]byte(",+-*/|&=(){}[]:"), r) > -1
 }
 
-func isIdentifierStart(r int) bool {
+func isIdentifierStart(r rune) bool {
 	return !(unicode.IsDigit(r) || unicode.IsSpace(r) || isOperator(r))
 }
 
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
-func isAlphaNumeric(r int) bool {
+func isAlphaNumeric(r rune) bool {
 	return !(unicode.IsSpace(r) || isOperator(r) || r == ';')
 }

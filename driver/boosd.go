@@ -33,14 +33,17 @@ func main() {
 
 	// and parse
 	f := parser.Parse(string(units))
-	log.Printf("compilationUnit: %#v\n", f)
-	indent := ""
-	parser.Inspect(f, func(n parser.Node) bool {
-		if n == nil {
-			indent = indent[:len(indent) - 2]
+//	log.Printf("compilationUnit: %#v\n", f)
+//	indent := ""
+	parser.Inspect(f, func(node parser.Node) bool {
+		if node == nil {
+			//indent = indent[:len(indent) - 2]
 		} else {
-			indent += "  "
-			fmt.Printf("%s%#v\n", indent, n)
+			switch n := node.(type) {
+			case *parser.ModelDecl:
+				fmt.Println("model", n.Name.Name)
+			}
+//			fmt.Printf("%s%#v\n", indent, n)
 		}
 		return true
 	})
