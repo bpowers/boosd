@@ -52,6 +52,7 @@ type boosdLex struct {
 	pos   int      // current position in the input
 	start int      // start of this token
 	width int      // width of the last rune
+	last  tok
 	items chan tok // channel of scanned items
 	state stateFn
 	semi  bool
@@ -82,7 +83,7 @@ func newBoosdLex(input string, file *File) *boosdLex {
 }
 
 func (l *boosdLex) Error(s string) {
-	fmt.Printf("syntax error: %s\n", s)
+	fmt.Printf("line X:Y - token %#v %s\n", l.last, s)
 }
 
 func (l *boosdLex) next() rune {
@@ -126,6 +127,7 @@ func (l *boosdLex) acceptRun(valid string) {
 func (l *boosdLex) emit(yyTy rune, ty itemType) {
 	t := tok{val: l.s[l.start:l.pos], yyKind: int(yyTy), kind: ty}
 	//log.Printf("t: %#v\n", t)
+	l.last = t
 	l.items <- t
 	l.ignore()
 
