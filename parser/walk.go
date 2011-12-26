@@ -74,7 +74,6 @@ func Walk(v Visitor, node Node) {
 	case *BadExpr, *Ident, *BasicLit:
 		// nothing to do
 
-
 	case *CompositeLit:
 		if n.Type != nil {
 			Walk(v, n.Type)

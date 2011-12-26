@@ -58,6 +58,107 @@ type Decl interface {
 	declNode()
 }
 
+// ----------------------------------------------------------------------------
+// Comments
+
+// A Comment node represents a single //-style or /*-style comment.
+type Comment struct {
+	Slash token.Pos // position of "/" starting the comment
+	Text  string    // comment text (excluding '\n' for //-style comments)
+}
+
+func (c *Comment) Pos() token.Pos { return c.Slash }
+func (c *Comment) End() token.Pos { return token.Pos(int(c.Slash) + len(c.Text)) }
+
+// A CommentGroup represents a sequence of comments
+// with no other tokens and no empty lines between.
+//
+type CommentGroup struct {
+	List []*Comment // len(List) > 0
+}
+
+func (g *CommentGroup) Pos() token.Pos { return g.List[0].Pos() }
+func (g *CommentGroup) End() token.Pos { return g.List[len(g.List)-1].End() }
+
+// ----------------------------------------------------------------------------
+// Expressions and types
+
+// A Field represents a Field declaration list in a struct type,
+// a method list in an interface type, or a parameter/result declaration
+// in a signature.
+//
+type Field struct {
+	Doc     *CommentGroup // associated documentation; or nil
+	Names   []*Ident      // field/method/parameter names; or nil if anonymous field
+	Type    Expr          // field/method/parameter type
+	Value   Expr          // field/method/parameter value
+	Tag     *BasicLit     // field tag; or nil
+	Comment *CommentGroup // line comments; or nil
+}
+
+func (f *Field) Pos() token.Pos {
+	if len(f.Names) > 0 {
+		return f.Names[0].Pos()
+	}
+	return f.Type.Pos()
+}
+
+func (f *Field) End() token.Pos {
+	if f.Tag != nil {
+		return f.Tag.End()
+	}
+	return f.Type.End()
+}
+
+// A FieldList represents a list of Fields, enclosed by parentheses or braces.
+type FieldList struct {
+	Opening token.Pos // position of opening parenthesis/brace, if any
+	List    []*Field  // field list; or nil
+	Closing token.Pos // position of closing parenthesis/brace, if any
+}
+
+func (f *FieldList) Pos() token.Pos {
+	if f.Opening.IsValid() {
+		return f.Opening
+	}
+	// the list should not be empty in this case;
+	// be conservative and guard against bad ASTs
+	if len(f.List) > 0 {
+		return f.List[0].Pos()
+	}
+	return token.NoPos
+}
+
+func (f *FieldList) End() token.Pos {
+	if f.Closing.IsValid() {
+		return f.Closing + 1
+	}
+	// the list should not be empty in this case;
+	// be conservative and guard against bad ASTs
+	if n := len(f.List); n > 0 {
+		return f.List[n-1].End()
+	}
+	return token.NoPos
+}
+
+// NumFields returns the number of (named and anonymous fields) in a FieldList.
+func (f *FieldList) NumFields() int {
+	n := 0
+	if f != nil {
+		for _, g := range f.List {
+			m := len(g.Names)
+			if m == 0 {
+				m = 1 // anonymous field
+			}
+			n += m
+		}
+	}
+	return n
+}
+
+// An expression is represented by a tree consisting of one
+// or more of the following concrete expression nodes.
+//
 type (
 	// A BadExpr node is a placeholder for expressions containing
 	// syntax errors for which no correct expression nodes can be
@@ -182,65 +283,6 @@ type (
 	}
 )
 
-// ----------------------------------------------------------------------------
-// Expressions and types
-
-// A Field represents a Field declaration list in a struct type,
-// a method list in an interface type, or a parameter/result declaration
-// in a signature.
-//
-type Field struct {
-	Names []*Ident  // field/method/parameter names; or nil if anonymous field
-	Type  Expr      // field/method/parameter type
-	Value Expr      // field/method/parameter value
-	Tag   *BasicLit // field tag; or nil
-}
-
-func (f *Field) Pos() token.Pos {
-	if len(f.Names) > 0 {
-		return f.Names[0].Pos()
-	}
-	return f.Type.Pos()
-}
-
-func (f *Field) End() token.Pos {
-	if f.Tag != nil {
-		return f.Tag.End()
-	}
-	return f.Type.End()
-}
-
-// A FieldList represents a list of Fields, enclosed by parentheses or braces.
-type FieldList struct {
-	Opening token.Pos // position of opening parenthesis/brace, if any
-	List    []*Field  // field list; or nil
-	Closing token.Pos // position of closing parenthesis/brace, if any
-}
-
-func (f *FieldList) Pos() token.Pos {
-	if f.Opening.IsValid() {
-		return f.Opening
-	}
-	// the list should not be empty in this case;
-	// be conservative and guard against bad ASTs
-	if len(f.List) > 0 {
-		return f.List[0].Pos()
-	}
-	return token.NoPos
-}
-
-func (f *FieldList) End() token.Pos {
-	if f.Closing.IsValid() {
-		return f.Closing + 1
-	}
-	// the list should not be empty in this case;
-	// be conservative and guard against bad ASTs
-	if n := len(f.List); n > 0 {
-		return f.List[n-1].End()
-	}
-	return token.NoPos
-}
-
 func (x *BadExpr) Pos() token.Pos  { return x.From }
 func (x *Ident) Pos() token.Pos    { return x.NamePos }
 func (x *BasicLit) Pos() token.Pos { return x.ValuePos }
@@ -263,7 +305,7 @@ func (x *KeyValueExpr) Pos() token.Pos  { return x.Key.Pos() }
 func (x *ModelType) Pos() token.Pos     { return x.Model }
 func (x *InterfaceType) Pos() token.Pos { return x.Interface }
 
-func (x *BadExpr) End() token.Pos       { return x.To + 1 }
+func (x *BadExpr) End() token.Pos       { return x.To }
 func (x *Ident) End() token.Pos         { return token.Pos(int(x.NamePos) + len(x.Name)) }
 func (x *BasicLit) End() token.Pos      { return token.Pos(int(x.ValuePos) + len(x.Value)) }
 func (x *CompositeLit) End() token.Pos  { return x.Rbrace + 1 }
@@ -283,23 +325,23 @@ func (x *InterfaceType) End() token.Pos { return x.Methods.End() }
 // exprNode() ensures that only expression/type nodes can be
 // assigned to an ExprNode.
 //
-func (x *BadExpr) exprNode()      {}
-func (x *Ident) exprNode()        {}
-func (x *BasicLit) exprNode()     {}
-func (x *CompositeLit) exprNode() {}
-func (x *ParenExpr) exprNode()    {}
-func (x *SelectorExpr) exprNode() {}
-func (x *IndexExpr) exprNode()    {}
-func (x *CallExpr) exprNode()     {}
-func (x *UnaryExpr) exprNode()    {}
-func (x *BinaryExpr) exprNode()   {}
-func (x *TableExpr) exprNode()    {}
-func (x *PairExpr) exprNode()     {}
-func (x *UnitExpr) exprNode()     {}
-func (x *KeyValueExpr) exprNode() {}
+func (*BadExpr) exprNode()      {}
+func (*Ident) exprNode()        {}
+func (*BasicLit) exprNode()     {}
+func (*CompositeLit) exprNode() {}
+func (*ParenExpr) exprNode()    {}
+func (*SelectorExpr) exprNode() {}
+func (*IndexExpr) exprNode()    {}
+func (*CallExpr) exprNode()     {}
+func (*UnaryExpr) exprNode()    {}
+func (*BinaryExpr) exprNode()   {}
+func (*TableExpr) exprNode()    {}
+func (*PairExpr) exprNode()     {}
+func (*UnitExpr) exprNode()     {}
+func (*KeyValueExpr) exprNode() {}
 
-func (x *ModelType) exprNode()     {}
-func (x *InterfaceType) exprNode() {}
+func (*ModelType) exprNode()     {}
+func (*InterfaceType) exprNode() {}
 
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents
@@ -385,12 +427,12 @@ func (s *BlockStmt) End() token.Pos  { return s.Rbrace + 1 }
 // stmtNode() ensures that only statement nodes can be
 // assigned to a StmtNode.
 //
-func (s *BadStmt) stmtNode()    {}
-func (s *DeclStmt) stmtNode()   {}
-func (s *EmptyStmt) stmtNode()  {}
-func (s *ExprStmt) stmtNode()   {}
-func (s *AssignStmt) stmtNode() {}
-func (s *BlockStmt) stmtNode()  {}
+func (*BadStmt) stmtNode()    {}
+func (*DeclStmt) stmtNode()   {}
+func (*EmptyStmt) stmtNode()  {}
+func (*ExprStmt) stmtNode()   {}
+func (*AssignStmt) stmtNode() {}
+func (*BlockStmt) stmtNode()  {}
 
 // ----------------------------------------------------------------------------
 // Declarations
@@ -407,18 +449,22 @@ type (
 
 	// An ImportSpec node represents a single package import.
 	ImportSpec struct {
-		Name   *Ident    // local package name (including "."); or nil
-		Path   *BasicLit // import path
-		EndPos token.Pos // end of spec (overrides Path.Pos if nonzero)
+		Doc     *CommentGroup // associated documentation; or nil
+		Name    *Ident        // local package name (including "."); or nil
+		Path    *BasicLit     // import path
+		Comment *CommentGroup // line comments; or nil
+		EndPos  token.Pos     // end of spec (overrides Path.Pos if nonzero)
 	}
 
 	// A ValueSpec node represents a constant or variable declaration
 	// (ConstSpec or VarSpec production).
 	//
 	KindSpec struct {
-		Names  []*Ident // value names (len(Names) > 0)
-		Type   Expr     // value type; or nil
-		Values []Expr   // initial values; or nil
+		Doc     *CommentGroup // associated documentation; or nil
+		Names   []*Ident      // value names (len(Names) > 0)
+		Type    Expr          // value type; or nil
+		Values  []Expr        // initial values; or nil
+		Comment *CommentGroup // line comments; or nil
 	}
 )
 
@@ -478,34 +524,38 @@ type (
 	//	token.VAR     *ValueSpec
 	//
 	GenDecl struct {
-		TokPos token.Pos   // position of Tok
-		Tok    token.Token // IMPORT, CONST, TYPE, VAR
-		Lparen token.Pos   // position of '(', if any
+		Doc    *CommentGroup // associated documentation; or nil
+		TokPos token.Pos     // position of Tok
+		Tok    token.Token   // IMPORT, CONST, TYPE, VAR
+		Lparen token.Pos     // position of '(', if any
 		Specs  []Spec
 		Rparen token.Pos // position of ')', if any
 	}
 
 	VarDecl struct {
-		Name  *Ident // name of the variable
-		Type  *Ident // type (stock, flow) of the variable
-		Units Expr   // name of the variable
+		Doc   *CommentGroup // associated documentation; or nil
+		Name  *Ident        // name of the variable
+		Type  *Ident        // type (stock, flow) of the variable
+		Units Expr          // name of the variable
 	}
 
-	// A FuncDecl node represents a function declaration.
+	// A InterfaceDecl node represents an interface declaration.
 	InterfaceDecl struct {
-		Name  *Ident     // function/method name
-		Super *Ident     // function/method name
-		Units *BasicLit  // position of Func keyword, parameters and results
-		Body  *BlockStmt // function body; or nil (forward declaration)
+		Doc   *CommentGroup // associated documentation; or nil
+		Name  *Ident        // function/method name
+		Super *Ident        // function/method name
+		Units *BasicLit     // position of Func keyword, parameters and results
+		Body  *BlockStmt    // function body; or nil (forward declaration)
 	}
 
-	// A FuncDecl node represents a function declaration.
+	// A ModelDecl node represents a model declaration.
 	ModelDecl struct {
-		Recv  *FieldList // receiver (methods); or nil (functions)
-		Name  *Ident     // function/method name
-		Super *Ident     // function/method name
-		Units *BasicLit  // position of Func keyword, parameters and results
-		Body  *BlockStmt // function body; or nil (forward declaration)
+		Doc   *CommentGroup // associated documentation; or nil
+		Recv  *FieldList    // receiver (methods); or nil (functions)
+		Name  *Ident        // function/method name
+		Super *Ident        // function/method name
+		Units *BasicLit     // position of Func keyword, parameters and results
+		Body  *BlockStmt    // function body; or nil (forward declaration)
 	}
 )
 
@@ -518,7 +568,7 @@ func (d *InterfaceDecl) Pos() token.Pos { return d.Name.Pos() }
 func (d *ModelDecl) Pos() token.Pos     { return d.Name.Pos() }
 
 func (d *BadDecl) End() token.Pos { return d.To }
-func (d *VarDecl) End() token.Pos { return d.Name.End() } // FIXME
+func (d *VarDecl) End() token.Pos { return d.Units.End() }
 func (d *GenDecl) End() token.Pos {
 	if d.Rparen.IsValid() {
 		return d.Rparen + 1
@@ -547,12 +597,14 @@ func (d *ModelDecl) declNode()     {}
 // via Doc and Comment fields.
 //
 type File struct {
-	Package    token.Pos     // position of "package" keyword
-	Name       *Ident        // package name
-	Decls      []Decl        // top-level declarations; or nil
-	Scope      *Scope        // package scope (this file only)
-	Imports    []*ImportSpec // imports in this file
-	Unresolved []*Ident      // unresolved identifiers in this file
+	Doc        *CommentGroup   // associated documentation; or nil
+	Package    token.Pos       // position of "package" keyword
+	Name       *Ident          // package name
+	Decls      []Decl          // top-level declarations; or nil
+	Scope      *Scope          // package scope (this file only)
+	Imports    []*ImportSpec   // imports in this file
+	Unresolved []*Ident        // unresolved identifiers in this file
+	Comments   []*CommentGroup // list of all comments in the source file
 }
 
 func (f *File) Pos() token.Pos { return f.Package }

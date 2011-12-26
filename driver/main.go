@@ -1,8 +1,8 @@
 package main
 
 import (
-	"boosd/token"
 	"boosd/parser"
+	"boosd/token"
 	"bufio"
 	"flag"
 	"fmt"
@@ -39,8 +39,8 @@ func main() {
 
 	// and parse
 	f := parser.Parse(file, string(mdl))
-//	log.Printf("compilationUnit: %#v\n", f)
-//	indent := ""
+	//log.Printf("compilationUnit: %#v\n", f)
+	//indent := ""
 	parser.Inspect(f, func(node parser.Node) bool {
 		if node == nil {
 			//indent = indent[:len(indent) - 2]
@@ -49,7 +49,7 @@ func main() {
 			case *parser.ModelDecl:
 				fmt.Println("model", n.Name.Name)
 			}
-//			fmt.Printf("%s%#v\n", indent, n)
+			//fmt.Printf("%s%#v\n", indent, n)
 		}
 		return true
 	})

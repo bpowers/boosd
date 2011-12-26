@@ -18,6 +18,7 @@ BENCH=\
 
 clean.dirs: $(addsuffix .clean, $(DIRS))
 install.dirs: $(addsuffix .install, $(DIRS))
+gofmt.dirs: $(addsuffix .gofmt, $(DIRS))
 nuke.dirs: $(addsuffix .nuke, $(DIRS))
 test.dirs: $(addsuffix .test, $(TEST))
 testshort.dirs: $(addsuffix .testshort, $(TEST))
@@ -29,6 +30,10 @@ bench.dirs: $(addsuffix .bench, $(BENCH))
 %.install:
 	+@echo install $*
 	+@$(MAKE) -C $* install.clean >$*/build.out 2>&1 || (echo INSTALL FAIL $*; cat $*/build.out; exit 1)
+
+%.gofmt:
+	+@echo gofmt $*
+	+gofmt -w $*/*.go
 
 %.nuke:
 	+$(MAKE) -C $* nuke
@@ -47,6 +52,8 @@ bench.dirs: $(addsuffix .bench, $(BENCH))
 clean: clean.dirs
 
 install: install.dirs
+
+gofmt: gofmt.dirs
 
 test:	test.dirs
 

@@ -50,10 +50,10 @@ type stateFn func(*boosdLex) stateFn
 
 type boosdLex struct {
 	f     *token.File
-	s     string   // the string being scanned
-	pos   int      // current position in the input
-	start int      // start of this token
-	width int      // width of the last rune
+	s     string // the string being scanned
+	pos   int    // current position in the input
+	start int    // start of this token
+	width int    // width of the last rune
 	last  tok
 	items chan tok // channel of scanned items
 	state stateFn
