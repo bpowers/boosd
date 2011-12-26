@@ -3,7 +3,7 @@ include $(GOROOT)/src/Make.inc
 TARG = boosd
 
 GOFILES = \
-	boosd.go
+	main.go
 
 include $(GOROOT)/src/Make.cmd
 
