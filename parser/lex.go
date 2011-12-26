@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"boosd/token"
 	"bytes"
 	"fmt"
 	"log"
@@ -48,6 +49,7 @@ type tok struct {
 type stateFn func(*boosdLex) stateFn
 
 type boosdLex struct {
+	f     *token.File
 	s     string   // the string being scanned
 	pos   int      // current position in the input
 	start int      // start of this token
@@ -73,12 +75,13 @@ func (l *boosdLex) Lex(lval *boosdSymType) int {
 	panic("unreachable")
 }
 
-func newBoosdLex(input string, file *File) *boosdLex {
+func newBoosdLex(input string, file *token.File, result *File) *boosdLex {
 	return &boosdLex{
+		f:     file,
 		s:     input,
 		items: make(chan tok, 2),
 		state: lexStatement,
-		file:  file,
+		file:  result,
 	}
 }
 
@@ -93,6 +96,9 @@ func (l *boosdLex) next() rune {
 	r, width := utf8.DecodeRuneInString(l.s[l.pos:])
 	l.pos += width
 	l.width = width
+	if r == '\n' {
+		l.f.AddLine(l.pos)
+	}
 	return r
 }
 

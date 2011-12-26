@@ -323,12 +323,15 @@ pair:	'(' number ',' number ')'
 
 %% /* start of programs */
 
-func Parse(str string) *File {
-	f := &File{}
-	err := boosdParse(newBoosdLex(str, f))
+func Parse(f *token.File, str string) *File {
+	// this is weird, but without passing in a reference to this
+	// result object, there isn't another good way to keep the
+	// parser and lexer reentrant.
+	result := &File{}
+	err := boosdParse(newBoosdLex(str, f, result))
 	if err != 0 {
 		return nil
 	}
 
-	return f
+	return result
 }

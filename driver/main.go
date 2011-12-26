@@ -1,6 +1,7 @@
 package main
 
 import (
+	"boosd/token"
 	"boosd/parser"
 	"bufio"
 	"flag"
@@ -13,12 +14,16 @@ import (
 func main() {
 	flag.Parse()
 
+	var fs *token.FileSet = token.NewFileSet()
+	var filename string
 	var fi *bufio.Reader
 	// use the file if there is an argument, otherwise use stdin
 	if flag.NArg() == 0 {
+		filename = "stdin"
 		fi = bufio.NewReader(os.NewFile(0, "stdin"))
 	} else {
-		f, err := os.Open(flag.Arg(0))
+		filename = flag.Arg(0)
+		f, err := os.Open(filename)
 		if err != nil {
 			log.Fatal("Open:", err)
 		}
@@ -26,13 +31,14 @@ func main() {
 	}
 
 	// dump in the string
-	units, err := ioutil.ReadAll(fi)
+	mdl, err := ioutil.ReadAll(fi)
 	if err != nil {
 		log.Fatal("ReadAll:", err)
 	}
+	file := fs.AddFile(filename, fs.Base(), len(mdl))
 
 	// and parse
-	f := parser.Parse(string(units))
+	f := parser.Parse(file, string(mdl))
 //	log.Printf("compilationUnit: %#v\n", f)
 //	indent := ""
 	parser.Inspect(f, func(node parser.Node) bool {
