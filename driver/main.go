@@ -49,7 +49,7 @@ func main() {
 			case *parser.ModelDecl:
 				fmt.Println("model", n.Name.Name)
 			}
-			//fmt.Printf("%s%#v\n", indent, n)
+			//fmt.Printf("%s%#v\n", indent, node)
 		}
 		return true
 	})

@@ -187,6 +187,9 @@ func Walk(v Visitor, node Node) {
 
 	// Files and packages
 	case *File:
+		if n == nil {
+			break
+		}
 		Walk(v, n.Name)
 		walkDeclList(v, n.Decls)
 		// don't walk n.Comments - they have been

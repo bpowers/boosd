@@ -41,6 +41,7 @@ const (
 )
 
 type tok struct {
+	pos    token.Pos
 	val    string
 	kind   itemType
 	yyKind int
@@ -85,8 +86,28 @@ func newBoosdLex(input string, file *token.File, result *File) *boosdLex {
 	}
 }
 
+func (l *boosdLex) getLine(pos token.Position) string {
+	result := l.s[pos.Offset - pos.Column:]
+	if newline := strings.IndexRune(result, '\n'); newline != -1 {
+		result = result[:newline]
+	}
+	return result
+}
+
 func (l *boosdLex) Error(s string) {
-	fmt.Printf("line X:Y - token %#v %s\n", l.last, s)
+	pos := l.f.Position(l.last.pos)
+	line := l.getLine(pos)
+	// we want the number of spaces (taking into account tabs)
+	// before the problematic token
+	prefixLen := pos.Column + strings.Count(line[:pos.Column], "\t") * 7 - 1
+	prefix := strings.Repeat(" ", prefixLen)
+
+	line = strings.Replace(line, "\t", "        ", -1)
+
+	fmt.Printf("%s:%d:%d: error: %s\n", pos.Filename,
+		pos.Line, pos.Column, s)
+	fmt.Printf("%s\n", line)
+	fmt.Printf("%s^\n", prefix)
 }
 
 func (l *boosdLex) next() rune {
@@ -96,8 +117,9 @@ func (l *boosdLex) next() rune {
 	r, width := utf8.DecodeRuneInString(l.s[l.pos:])
 	l.pos += width
 	l.width = width
+
 	if r == '\n' {
-		l.f.AddLine(l.pos)
+		l.f.AddLine(l.pos + 1)
 	}
 	return r
 }
@@ -131,7 +153,12 @@ func (l *boosdLex) acceptRun(valid string) {
 }
 
 func (l *boosdLex) emit(yyTy rune, ty itemType) {
-	t := tok{val: l.s[l.start:l.pos], yyKind: int(yyTy), kind: ty}
+	t := tok{
+		pos: l.f.Pos(l.pos),
+		val: l.s[l.start:l.pos],
+		yyKind: int(yyTy),
+		kind: ty,
+	}
 	//log.Printf("t: %#v\n", t)
 	l.last = t
 	l.items <- t
