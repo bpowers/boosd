@@ -1,0 +1,41 @@
+
+read in concrete syntax tree
+  (worry about imports later)
+
+validation of CST...
+- detect inter and intra model circularity errors
+- is there anythign that can only be caught at runtime?
+  - prob not
+  - we don't need to do recursive model/interface type checking
+    - we dont have type casting, once a model is used as an interface,
+      there is no way to get the interface back
+- semantic analysis
+
+per interface
+- pointer to parent interface
+- list of aux/flow/stocks
+
+per model
+- 4 sorted lists:
+  - stock initial values (& other initial values)
+  - aux & flows
+  - stock updates
+  - submodels?
+- symbol table?
+- tables info and constants & others
+- pointer to timeinfo struct
+- pointer to namespace it was defined in?
+- pointer to parent model
+  - it would be best to avoid this, so that we can keep 'common' defs
+    in one place and simply pull 'smooth3' and 'delayn' into this model
+
+pass the model to a Simulator interface
+- initialization
+  - allocs current and next data arrays
+  - creates instances of submodels (_this_ is recursive)
+  - values of initial stocks
+  - new symbol table?
+
+- pointer to current and next data arrays
+- slice of historical (savestep) data
+
