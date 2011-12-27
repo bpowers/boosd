@@ -1,0 +1,17 @@
+ExponentialGrowth model {
+        integration_method = "euler"
+        time = {
+                start:     0  `years`
+                end:       50 `years`
+                dt:        .5 `months`
+                save_step: 1  `year`
+        
+
+	rate = .07
+	in flow = rate * accum
+
+	accum stock = {
+		inital: 200
+		inflow: in
+	}
+}

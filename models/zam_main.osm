@@ -1,0 +1,45 @@
+
+main model {
+        society = ZamSociety{
+                economy: economy
+        }
+        economy = ZamEconomy{
+                society: society
+                environment: environment
+        }
+        environment = ZamEnvironment{
+                society: society
+                economy: economy
+        }
+}
+
+
+ZamSociety model {
+        economy Economy
+
+        population = ZamPopulation{
+                access_to_basic_healthcare: health.access_to_basic_healthcare
+                adult_literacy_rate: education.adult_literacy_rate
+                real_per_capita_gdp: economy.real_per_capita_gdp
+        }
+}
+
+ZamSociety model {
+        economy Economy
+
+        population = ZamPopulation{
+                access_to_basic_healthcare: health.access_to_basic_healthcare
+                adult_literacy_rate: education.adult_literacy_rate
+                real_per_capita_gdp: economy.real_per_capita_gdp
+        }
+
+        health = ZamHealth{
+                total_population: population.total_population
+                economy: economy
+        }
+
+        education = ZamEducation{
+                population: population
+                economy: economy
+        }
+}

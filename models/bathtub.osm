@@ -1,0 +1,7 @@
+Bathtub model {
+        delay = 2 `minutes`
+        bathtub stock = {
+                outflow: bathtub / delay
+                initial: 500 `gallons`
+        }
+}
