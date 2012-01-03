@@ -166,7 +166,6 @@ def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 					Decl: t.Decl,
 				}
 				scope.Insert(obj)
-				fmt.Println(t.Name())
 			default:
 				panic("unknown type")
 			}

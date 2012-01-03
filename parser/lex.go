@@ -192,6 +192,10 @@ func lexStatement(l *boosdLex) stateFn {
 			l.next()
 			return lexComment
 		}
+		if l.peek() == '*' {
+			l.next()
+			return lexMultiComment
+		}
 		l.emit(r, itemOperator)
 	case r == '`':
 		return lexType
@@ -248,6 +252,27 @@ func lexComment(l *boosdLex) stateFn {
 	for r := l.next(); r != '\n' && r != eof; r = l.next() {
 	}
 	l.backup()
+	//	log.Print("2 ignoring:", l.s[l.start:l.pos])
+	l.ignore()
+	return lexStatement
+}
+
+func lexMultiComment(l *boosdLex) stateFn {
+	// skip everything until the end of the line, or the end of
+	// the file, whichever is first
+	for r := l.next();; r = l.next() {
+		if r == eof {
+			l.backup()
+			break
+		}
+		if r != '*' {
+			continue
+		}
+		if l.peek() == '/' {
+			l.next()
+			break
+		}
+	}
 	//	log.Print("2 ignoring:", l.s[l.start:l.pos])
 	l.ignore()
 	return lexStatement

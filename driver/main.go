@@ -42,7 +42,12 @@ func main() {
 	if f.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}
-	//log.Printf("compilationUnit: %#v\n", f)
+	// log.Printf("compilationUnit: %#v\n", f)
+	passTypeResolution(f)
+}
+
+func passTypeResolution(f *parser.File) {
+
 	indent := ""
 	parser.Inspect(f, func(node parser.Node) bool {
 		// inspect is called with nil at the end of a production
