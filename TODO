@@ -2,13 +2,19 @@
 read in concrete syntax tree
   (worry about imports later)
 
+  - type resolution
+  - reference validation
+  - equation ordering
+
+2 types of scope - models & vars
+
 validation of CST...
 - detect inter and intra model circularity errors
 - is there anythign that can only be caught at runtime?
   - prob not
   - we don't need to do recursive model/interface type checking
     - we dont have type casting, once a model is used as an interface,
-      there is no way to get the interface back
+      there is no way to get the concrete model back
 - semantic analysis
 
 per interface

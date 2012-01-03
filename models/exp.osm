@@ -1,11 +1,21 @@
-ExponentialGrowth model {
-        integration_method = "euler"
-        time = {
-                start:     0  `years`
-                end:       50 `years`
-                dt:        .5 `months`
-                save_step: 1  `year`
-        
+// ExponentialGrowth model {
+main model {
+	rate = .1
+	in flow = rate * accum
+
+	accum stock = {
+		inital: 1000
+		inflow: in
+	}
+}
+
+main model {
+        timespec = {
+                start:     0
+                end:       50
+                dt:        .5
+                save_step: 1
+        }
 
 	rate = .07
 	in flow = rate * accum

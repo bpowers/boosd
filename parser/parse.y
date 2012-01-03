@@ -26,7 +26,8 @@ import (
 	exprs  []Expr
 	expr   Expr
 	stmt   Stmt
-	decl   Decl
+	tlDecl Decl
+	decl   *VarDecl
 	decls  []Decl
 	block  *BlockStmt
 }
@@ -43,7 +44,8 @@ import (
 %type <stmt>   stmt
 %type <expr>   expr number pair table expr_w_unit opt_kind initializer assignment
 %type <exprs>  pairs expr_list initializers
-%type <decl>   var_decl def
+%type <decl>   var_decl
+%type <tlDecl> def
 %type <decls>  defs
 %type <lit>    lit
 
@@ -64,7 +66,26 @@ file:	imports
 	kinds
 	defs
 	{
-		*boosdlex.(*boosdLex).file = File{Decls:$3}
+		$$.Scope = NewScope(nil)
+		$$.Decls = $3
+		// chain up scopes
+		for _, d := range $$.Decls {
+			switch t := d.(type) {
+			case *ModelDecl:
+				if $$.Scope.Lookup(t.Name.Name) != nil {
+					fmt.Printf("redeclaration of %s\n", t.Name.Name)
+					$$.NErrors++
+				} else {
+					obj := &Object{
+						Kind: Mdl,
+						Name: t.Name.Name,
+						Decl: t,
+					}
+					$$.Scope.Insert(obj)
+				}
+			}
+		}
+		*boosdlex.(*boosdLex).file = $$
 	}
 ;
 
@@ -119,8 +140,39 @@ defs:	{}
 
 def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 	{
+		scope := NewScope(nil)
+		for _, d := range $6.List {
+			switch t := d.(type) {
+			case *AssignStmt:
+				if t.Name() == "timespec" {
+					fmt.Println("handling time...")
+					continue
+				}
+				obj := &Object{
+					Kind: Var,
+					Name: t.Name(),
+					Decl: t.Lhs,
+					Data: t.Rhs,
+				}
+				scope.Insert(obj)
+				fmt.Println(t.Name())
+			case *DeclStmt:
+				if t.Name() == "timespec" {
+					panic("declaring time without initializing it doesnt make sense")
+				}
+				obj := &Object{
+					Kind: Var,
+					Name: t.Name(),
+					Decl: t.Decl,
+				}
+				scope.Insert(obj)
+				fmt.Println(t.Name())
+			default:
+				panic("unknown type")
+			}
+		}
 		if $2.val == "model" {
-			$$ = &ModelDecl{Name:$1, Body:$6}
+			$$ = &ModelDecl{Name:$1, Body:$6, Objects: scope}
 		} else {
 			$$ = &InterfaceDecl{Name:$1, Body:$6}
 		}

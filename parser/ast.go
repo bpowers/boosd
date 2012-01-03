@@ -370,7 +370,7 @@ type (
 
 	// A DeclStmt node represents a declaration in a statement list.
 	DeclStmt struct {
-		Decl Decl
+		Decl *VarDecl
 	}
 
 	// An EmptyStmt node represents an empty statement.
@@ -392,7 +392,7 @@ type (
 	// a short variable declaration.
 	//
 	AssignStmt struct {
-		Lhs    Decl
+		Lhs    *VarDecl
 		TokPos token.Pos   // position of Tok
 		Tok    token.Token // assignment token, DEFINE
 		Rhs    Expr
@@ -433,6 +433,14 @@ func (*EmptyStmt) stmtNode()  {}
 func (*ExprStmt) stmtNode()   {}
 func (*AssignStmt) stmtNode() {}
 func (*BlockStmt) stmtNode()  {}
+
+func (s *AssignStmt) Name() string {
+	return s.Lhs.Name.Name
+}
+
+func (s *DeclStmt) Name() string {
+	return s.Decl.Name.Name
+}
 
 // ----------------------------------------------------------------------------
 // Declarations
@@ -550,12 +558,13 @@ type (
 
 	// A ModelDecl node represents a model declaration.
 	ModelDecl struct {
-		Doc   *CommentGroup // associated documentation; or nil
-		Recv  *FieldList    // receiver (methods); or nil (functions)
-		Name  *Ident        // function/method name
-		Super *Ident        // function/method name
-		Units *BasicLit     // position of Func keyword, parameters and results
-		Body  *BlockStmt    // function body; or nil (forward declaration)
+		Objects *Scope        // all declared variables
+		Doc     *CommentGroup // associated documentation; or nil
+		Recv    *FieldList    // receiver (methods); or nil (functions)
+		Name    *Ident        // function/method name
+		Super   *Ident        // function/method name
+		Units   *BasicLit     // position of Func keyword, parameters and results
+		Body    *BlockStmt    // function body; or nil (forward declaration)
 	}
 )
 
@@ -605,6 +614,7 @@ type File struct {
 	Imports    []*ImportSpec   // imports in this file
 	Unresolved []*Ident        // unresolved identifiers in this file
 	Comments   []*CommentGroup // list of all comments in the source file
+	NErrors    int             // number of errors
 }
 
 func (f *File) Pos() token.Pos { return f.Package }

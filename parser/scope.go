@@ -137,6 +137,7 @@ const (
 	Var                // variable
 	Fun                // function or method
 	Lbl                // label
+	Mdl                // model
 )
 
 var objKindStrings = [...]string{
@@ -147,6 +148,7 @@ var objKindStrings = [...]string{
 	Var: "var",
 	Fun: "func",
 	Lbl: "label",
+	Mdl: "model",
 }
 
 func (kind ObjKind) String() string { return objKindStrings[kind] }
