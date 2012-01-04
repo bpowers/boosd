@@ -140,13 +140,17 @@ defs:	{}
 
 def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 	{
+		// don't handle time in the same way as other variables
+		if len($6.List) > 0 && $6.List[0].Name() == "timespec" {
+			$6.List = $6.List[1:]
+		}
+
 		scope := NewScope(nil)
 		for _, d := range $6.List {
 			switch t := d.(type) {
 			case *AssignStmt:
 				if t.Name() == "timespec" {
-					fmt.Println("handling time...")
-					continue
+					panic("timespec can only come first...")
 				}
 				obj := &Object{
 					Kind: Var,
@@ -155,7 +159,6 @@ def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 					Data: t.Rhs,
 				}
 				scope.Insert(obj)
-				fmt.Println(t.Name())
 			case *DeclStmt:
 				if t.Name() == "timespec" {
 					panic("declaring time without initializing it doesnt make sense")

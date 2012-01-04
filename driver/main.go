@@ -1,11 +1,10 @@
 package main
 
 import (
-	"boosd/parser"
+	. "boosd/parser"
 	"boosd/token"
 	"bufio"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -38,29 +37,10 @@ func main() {
 	file := fs.AddFile(filename, fs.Base(), len(mdl))
 
 	// and parse
-	f := parser.Parse(file, string(mdl))
+	f := Parse(file, string(mdl))
 	if f.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}
 	// log.Printf("compilationUnit: %#v\n", f)
 	passTypeResolution(f)
-}
-
-func passTypeResolution(f *parser.File) {
-
-	indent := ""
-	parser.Inspect(f, func(node parser.Node) bool {
-		// inspect is called with nil at the end of a production
-		if node == nil {
-			indent = indent[:len(indent) - 2]
-		} else {
-			switch n := node.(type) {
-			case *parser.ModelDecl:
-				fmt.Println("model", n.Name.Name)
-			}
-			//fmt.Printf("%s%#v\n", indent, node)
-			indent += "  "
-		}
-		return true
-	})
 }

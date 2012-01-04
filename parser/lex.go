@@ -87,7 +87,7 @@ func newBoosdLex(input string, file *token.File, result *File) *boosdLex {
 }
 
 func (l *boosdLex) getLine(pos token.Position) string {
-	result := l.s[pos.Offset - pos.Column:]
+	result := l.s[pos.Offset-pos.Column:]
 	if newline := strings.IndexRune(result, '\n'); newline != -1 {
 		result = result[:newline]
 	}
@@ -99,7 +99,7 @@ func (l *boosdLex) Error(s string) {
 	line := l.getLine(pos)
 	// we want the number of spaces (taking into account tabs)
 	// before the problematic token
-	prefixLen := pos.Column + strings.Count(line[:pos.Column], "\t") * 7 - 1
+	prefixLen := pos.Column + strings.Count(line[:pos.Column], "\t")*7 - 1
 	prefix := strings.Repeat(" ", prefixLen)
 
 	line = strings.Replace(line, "\t", "        ", -1)
@@ -154,10 +154,10 @@ func (l *boosdLex) acceptRun(valid string) {
 
 func (l *boosdLex) emit(yyTy rune, ty itemType) {
 	t := tok{
-		pos: l.f.Pos(l.pos),
-		val: l.s[l.start:l.pos],
+		pos:    l.f.Pos(l.pos),
+		val:    l.s[l.start:l.pos],
 		yyKind: int(yyTy),
-		kind: ty,
+		kind:   ty,
 	}
 	//log.Printf("t: %#v\n", t)
 	l.last = t
@@ -260,7 +260,7 @@ func lexComment(l *boosdLex) stateFn {
 func lexMultiComment(l *boosdLex) stateFn {
 	// skip everything until the end of the line, or the end of
 	// the file, whichever is first
-	for r := l.next();; r = l.next() {
+	for r := l.next(); ; r = l.next() {
 		if r == eof {
 			l.backup()
 			break

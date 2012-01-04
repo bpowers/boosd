@@ -50,6 +50,7 @@ type Expr interface {
 type Stmt interface {
 	Node
 	stmtNode()
+	Name() string
 }
 
 // All declaration nodes implement the Decl interface.

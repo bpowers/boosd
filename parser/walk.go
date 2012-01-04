@@ -167,8 +167,6 @@ func Walk(v Visitor, node Node) {
 		}
 
 	case *InterfaceDecl:
-		Walk(v, n.Name)
-		Walk(v, n.Super)
 		Walk(v, n.Units)
 		if n.Body != nil {
 			Walk(v, n.Body)
@@ -178,9 +176,6 @@ func Walk(v Visitor, node Node) {
 		if n.Recv != nil {
 			Walk(v, n.Recv)
 		}
-		Walk(v, n.Name)
-		Walk(v, n.Super)
-		Walk(v, n.Units)
 		if n.Body != nil {
 			Walk(v, n.Body)
 		}
@@ -190,7 +185,6 @@ func Walk(v Visitor, node Node) {
 		if n == nil {
 			break
 		}
-		Walk(v, n.Name)
 		walkDeclList(v, n.Decls)
 		// don't walk n.Comments - they have been
 		// visited already through the individual
