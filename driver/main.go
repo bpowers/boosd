@@ -43,4 +43,12 @@ func main() {
 	}
 	// log.Printf("compilationUnit: %#v\n", f)
 	passTypeResolution(f)
+
+	mainMdl := f.GetModel("main")
+
+	if mainMdl == nil {
+		log.Fatal("No main model")
+	} else if mainMdl.Virtual {
+		log.Fatal("Main model can't have undefined variables")
+	}
 }

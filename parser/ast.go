@@ -566,6 +566,7 @@ type (
 		Super   *Ident        // function/method name
 		Units   *BasicLit     // position of Func keyword, parameters and results
 		Body    *BlockStmt    // function body; or nil (forward declaration)
+		Virtual bool
 	}
 )
 
@@ -616,6 +617,15 @@ type File struct {
 	Unresolved []*Ident        // unresolved identifiers in this file
 	Comments   []*CommentGroup // list of all comments in the source file
 	NErrors    int             // number of errors
+}
+
+func (f *File) GetModel(name string) *ModelDecl {
+	for _, decl := range f.Decls {
+		if mdl, ok := decl.(*ModelDecl); ok && mdl.Name.Name == name {
+			return mdl
+		}
+	}
+	return nil
 }
 
 func (f *File) Pos() token.Pos { return f.Package }

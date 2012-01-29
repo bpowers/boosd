@@ -11,6 +11,7 @@ func passTypeResolution(f *File) {
 	typeScope := make([]*Scope, 2)
 	objScope := make([]*Scope, 2)
 	depth := 0
+	var currModel *ModelDecl
 
 	Inspect(f, func(node Node) bool {
 		// inspect is called with nil at the end of a production
@@ -26,9 +27,11 @@ func passTypeResolution(f *File) {
 			typeScope = append(typeScope, n.Scope)
 			fmt.Println("appending typeScope")
 		case *ModelDecl:
+			currModel = n
 			objScope = append(objScope, n.Objects)
 			fmt.Println("model (appending objScope)", n.Name.Name)
 		case *DeclStmt:
+			currModel.Virtual = true
 			fmt.Println(strings.Repeat("  ", depth) + n.Name())
 		case *AssignStmt:
 			fmt.Println(strings.Repeat("  ", depth) + n.Name())
