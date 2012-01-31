@@ -566,7 +566,8 @@ type (
 		Super   *Ident        // function/method name
 		Units   *BasicLit     // position of Func keyword, parameters and results
 		Body    *BlockStmt    // function body; or nil (forward declaration)
-		Virtual bool
+		Virtual bool          // if the model has decls which require initialization
+		Errors  int           // number of errors, such as unresolvable refs
 	}
 )
 
