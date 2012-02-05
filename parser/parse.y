@@ -42,7 +42,7 @@ import (
 %type <tok>    top_type
 %type <block>  stmts
 %type <stmt>   stmt
-%type <expr>   expr number pair table expr_w_unit opt_kind initializer assignment
+%type <expr>   expr number pair table expr_w_unit opt_kind initializer assignment ref
 %type <exprs>  pairs expr_list initializers
 %type <decl>   var_decl
 %type <tlDecl> def
@@ -313,7 +313,7 @@ expr:	'(' expr ')'
 	{
 		$$ = $1
 	}
-|	ident
+|	ref
 	{
 		$$ = $1
 	}
@@ -322,6 +322,11 @@ expr:	'(' expr ')'
 		$$ = $1
 	}
 ;
+
+ref: ident
+	{
+		$$ = &RefExpr{*$1}
+	}
 
 ident:	YIDENT
 	{

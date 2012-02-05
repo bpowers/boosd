@@ -247,6 +247,11 @@ type (
 		Unit Expr // the expression's units
 	}
 
+	// a reference to a variable's value
+	RefExpr struct {
+		Ident // the variable name
+	}
+
 	// A KeyValueExpr node represents (key : value) pairs
 	// in composite literals.
 	//

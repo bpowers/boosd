@@ -71,7 +71,7 @@ func Walk(v Visitor, node Node) {
 		}
 
 	// Expressions
-	case *BadExpr, *Ident, *BasicLit:
+	case *BadExpr, *Ident, *BasicLit, *RefExpr:
 		// nothing to do
 
 	case *CompositeLit:
