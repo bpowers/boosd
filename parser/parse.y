@@ -4,7 +4,7 @@
 
 %{
 
-package main
+package parser
 
 import (
 	"boosd/token"
