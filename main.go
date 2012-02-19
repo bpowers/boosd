@@ -11,18 +11,21 @@ import (
 )
 
 func main() {
-	flag.Parse()
-
-	var fs *token.FileSet = token.NewFileSet()
+	var fset *token.FileSet = token.NewFileSet()
 	var filename string
 	var fi *bufio.Reader
+	var f *os.File
+	var err error
+
+	flag.Parse()
+
 	// use the file if there is an argument, otherwise use stdin
 	if flag.NArg() == 0 {
 		filename = "stdin"
 		fi = bufio.NewReader(os.NewFile(0, "stdin"))
 	} else {
 		filename = flag.Arg(0)
-		f, err := os.Open(filename)
+		f, err = os.Open(filename)
 		if err != nil {
 			log.Fatal("Open:", err)
 		}
@@ -34,17 +37,22 @@ func main() {
 	if err != nil {
 		log.Fatal("ReadAll:", err)
 	}
-	file := fs.AddFile(filename, fs.Base(), len(mdl))
+
+	if f != nil && f.Close() != nil {
+		log.Fatal("f.Close()")
+	}
+
+	file := fset.AddFile(filename, fset.Base(), len(mdl))
 
 	// and parse
-	f := Parse(file, string(mdl))
-	if f.NErrors > 0 {
+	pkg := Parse(file, string(mdl))
+	if pkg.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}
 	// log.Printf("compilationUnit: %#v\n", f)
-	passTypeResolution(f)
+	passTypeResolution(pkg)
 
-	mainMdl := f.GetModel("main")
+	mainMdl := pkg.GetModel("main")
 
 	if mainMdl == nil {
 		log.Fatal("No main model")
