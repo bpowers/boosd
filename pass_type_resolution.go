@@ -2,24 +2,17 @@ package main
 
 import (
 	. "boosd/parser"
-	"boosd/token"
 	"fmt"
 	"strings"
 )
-
-func x() {
-
-}
 
 type Pass interface {
 	Inspect(Node) bool
 }
 
 type typeResolution struct {
-	fset      *token.FileSet
-	typeScope *Scope
-	objScope  *Scope
 	currModel *ModelDecl
+	scope     *Scope
 	depth     int
 }
 
@@ -48,7 +41,7 @@ func (p *typeResolution) Visit(node Node) bool {
 	case *AssignStmt:
 		fmt.Println(strings.Repeat("  ", p.depth) + n.Name())
 	case *RefExpr:
-		if p.objScope != nil && p.objScope.Lookup(n.Name) == nil {
+		if p.scope != nil && p.scope.Lookup(n.Name) == nil {
 			panic("unknown variable referenced: " + n.Name)
 		}
 	}
@@ -60,8 +53,6 @@ func (p *typeResolution) Visit(node Node) bool {
 }
 
 func passTypeResolution(f *File) {
-
-	pass := typeResolution{}
-
+	pass := typeResolution{scope:f.Scope}
 	pass.Inspect(f)
 }
