@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "boosd/parser"
+	"boosd/parser"
 	"boosd/token"
 	"bufio"
 	"flag"
@@ -32,7 +32,7 @@ func main() {
 		fi = bufio.NewReader(f)
 	}
 
-	// dump in the string
+	// dump in the file
 	mdl, err := ioutil.ReadAll(fi)
 	if err != nil {
 		log.Fatal("ReadAll:", err)
@@ -45,7 +45,7 @@ func main() {
 	file := fset.AddFile(filename, fset.Base(), len(mdl))
 
 	// and parse
-	pkg := Parse(file, string(mdl))
+	pkg := parser.Parse(file, string(mdl))
 	if pkg.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}

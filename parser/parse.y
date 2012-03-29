@@ -66,25 +66,7 @@ file:	imports
 	kinds
 	defs
 	{
-		$$.Scope = NewScope(nil)
 		$$.Decls = $3
-		// chain up scopes
-		for _, d := range $$.Decls {
-			switch t := d.(type) {
-			case *ModelDecl:
-				if $$.Scope.Lookup(t.Name.Name) != nil {
-					fmt.Printf("redeclaration of %s\n", t.Name.Name)
-					$$.NErrors++
-				} else {
-					obj := &Object{
-						Kind: Mdl,
-						Name: t.Name.Name,
-						Decl: t,
-					}
-					$$.Scope.Insert(obj)
-				}
-			}
-		}
 		*boosdlex.(*boosdLex).file = $$
 	}
 ;
@@ -140,41 +122,8 @@ defs:	{}
 
 def:	ident top_type opt_kind specializes '{' stmts '}' ';'
 	{
-		// don't handle time in the same way as other variables
-		if len($6.List) > 0 && $6.List[0].Name() == "timespec" {
-			$6.List = $6.List[1:]
-		}
-
-		scope := NewScope(nil)
-		for _, d := range $6.List {
-			switch t := d.(type) {
-			case *AssignStmt:
-				if t.Name() == "timespec" {
-					panic("timespec can only come first...")
-				}
-				obj := &Object{
-					Kind: Var,
-					Name: t.Name(),
-					Decl: t.Lhs,
-					Data: t.Rhs,
-				}
-				scope.Insert(obj)
-			case *DeclStmt:
-				if t.Name() == "timespec" {
-					panic("declaring time without initializing it doesnt make sense")
-				}
-				obj := &Object{
-					Kind: Var,
-					Name: t.Name(),
-					Decl: t.Decl,
-				}
-				scope.Insert(obj)
-			default:
-				panic("unknown type")
-			}
-		}
 		if $2.val == "model" {
-			$$ = &ModelDecl{Name:$1, Body:$6, Objects: scope}
+			$$ = &ModelDecl{Name:$1, Body:$6}
 		} else {
 			$$ = &InterfaceDecl{Name:$1, Body:$6}
 		}
