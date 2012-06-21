@@ -1,0 +1,7 @@
+to build:
+
+    ./all.bash
+
+to run:
+
+    boosd models/exp.osm
