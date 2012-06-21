@@ -50,6 +50,8 @@ func main() {
 		log.Fatal("There were errors parsing the file")
 	}
 	// log.Printf("compilationUnit: %#v\n", f)
+	passTimespec(pkg)
+	passScopeChain(pkg)
 	passTypeResolution(pkg)
 
 	mainMdl := pkg.GetModel("main")
