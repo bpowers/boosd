@@ -53,6 +53,6 @@ func (p *typeResolution) Visit(node Node) bool {
 }
 
 func passTypeResolution(f *File) {
-	pass := typeResolution{scope:f.Scope}
+	pass := typeResolution{scope: f.Scope}
 	pass.Inspect(f)
 }

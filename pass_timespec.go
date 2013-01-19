@@ -49,6 +49,6 @@ func (p *timeSpec) Visit(node Node) bool {
 }
 
 func passTimespec(f *File) {
-	pass := timeSpec{scope:f.Scope}
+	pass := timeSpec{scope: f.Scope}
 	pass.Inspect(f)
 }

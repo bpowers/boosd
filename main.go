@@ -10,14 +10,16 @@ import (
 	"os"
 )
 
+func init() {
+	flag.Parse()
+}
+
 func main() {
 	var fset *token.FileSet = token.NewFileSet()
 	var filename string
 	var fi *bufio.Reader
 	var f *os.File
 	var err error
-
-	flag.Parse()
 
 	// use the file if there is an argument, otherwise use stdin
 	if flag.NArg() == 0 {

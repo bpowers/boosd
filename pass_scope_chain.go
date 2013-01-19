@@ -49,6 +49,6 @@ func (p *scopeChain) Visit(node Node) bool {
 }
 
 func passScopeChain(f *File) {
-	pass := scopeChain{scope:f.Scope}
+	pass := scopeChain{scope: f.Scope}
 	pass.Inspect(f)
 }
