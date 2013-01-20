@@ -75,14 +75,14 @@ func main() {
 		}
 	*/
 
-	goFile, err := genGoFile(pkg)
+	goFile, err := passGoAST(pkg)
 	if err != nil {
-		log.Fatal("genGoAST(%v): %s", pkg, err)
+		log.Fatalf("genGoAST(%v): %s", pkg, err)
 	}
 
 	src, err := gofmtFile(goFile, goFset)
 	if err != nil {
-		log.Fatal("gofmtFile(%v): %s", goFile, err)
+		log.Fatalf("gofmtFile(%v): %s", goFile, err)
 	}
 
 	os.Stdout.Write(src)
