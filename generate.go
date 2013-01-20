@@ -6,35 +6,35 @@ import (
 	"go/ast"
 )
 
-type goAST struct{}
+type generator struct{}
 
-func (p *goAST) Inspect(node Node) {
-	Inspect(node, func(n Node) bool { return p.Visit(n) })
+func (g *generator) declList(list []Decl) ([]ast.Decl, error) {
+	return []ast.Decl{}, nil
 }
 
-func (p *goAST) Visit(node Node) bool {
-	// inspect is called with nil at the end of a production
-	if node == nil {
-		return true
-	}
-
+func (g *generator) gen(node Node) (interface{}, error) {
+	var err error
 	switch n := node.(type) {
 	case *File:
-		//typeScope = append(typeScope, n.Scope)
-		fmt.Println("appending typeScope")
-	case *ModelDecl:
-		//objScope = append(objScope, n.Objects)
-		fmt.Println("model (appending objScope)", n.Name.Name)
-	case *DeclStmt:
-	case *AssignStmt:
-	case *RefExpr:
+		f := &ast.File{Name: ast.NewIdent("main")}
+		if f.Decls, err = g.declList(n.Decls); err != nil {
+			return nil, err
+		}
+		return f, nil
 	}
 
-	return true
+	return nil, fmt.Errorf("unimplemented")
 }
 
-func passGoAST(f *File) (*ast.File, error) {
-	pass := goAST{}
-	pass.Inspect(f)
-	return nil, fmt.Errorf("not implemented")
+func generateGoAST(f *File) (*ast.File, error) {
+	node, err := (&generator{}).gen(f)
+	if err != nil {
+		return nil, err
+	}
+
+	if goFile, ok := node.(*ast.File); ok {
+		return goFile, nil
+	}
+
+	return nil, fmt.Errorf("gen(%v): node not an *ast.File", node)
 }

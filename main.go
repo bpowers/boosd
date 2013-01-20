@@ -75,9 +75,9 @@ func main() {
 		}
 	*/
 
-	goFile, err := passGoAST(pkg)
+	goFile, err := generateGoAST(pkg)
 	if err != nil {
-		log.Fatalf("genGoAST(%v): %s", pkg, err)
+		log.Fatalf("generateGoAST(%v): %s", pkg, err)
 	}
 
 	src, err := gofmtFile(goFile, goFset)
