@@ -5,8 +5,8 @@
 package parser
 
 import (
-	"go/token"
 	"fmt"
+	"go/token"
 	"io"
 	"sort"
 )

@@ -1,8 +1,11 @@
 package parser
 
 import (
+	"go/ast"
 	"go/token"
 )
+
+var _ = ast.File{}
 
 type ObjectKind int
 
@@ -36,8 +39,9 @@ const (
 
 // All node types implement the Node interface.
 type Node interface {
-	Pos() token.Pos // position of first character belonging to the node
-	End() token.Pos // position of first character immediately after the node
+	Pos() token.Pos     // position of first character belonging to the node
+	End() token.Pos     // position of first character immediately after the node
+	GoAST() interface{} // Go AST representation of this node
 }
 
 // All expression nodes implement the Expr interface.
@@ -111,6 +115,10 @@ func (f *Field) End() token.Pos {
 	return f.Type.End()
 }
 
+func (f *Field) GoAST() interface{} {
+	return nil
+}
+
 // A FieldList represents a list of Fields, enclosed by parentheses or braces.
 type FieldList struct {
 	Opening token.Pos // position of opening parenthesis/brace, if any
@@ -155,6 +163,10 @@ func (f *FieldList) NumFields() int {
 		}
 	}
 	return n
+}
+
+func (f *FieldList) GoAST() interface{} {
+	return nil
 }
 
 // An expression is represented by a tree consisting of one
@@ -349,6 +361,58 @@ func (*KeyValueExpr) exprNode() {}
 func (*ModelType) exprNode()     {}
 func (*InterfaceType) exprNode() {}
 
+// GoAST implementations
+//
+
+func (x *BadExpr) GoAST() interface{} {
+	return nil
+}
+func (x *Ident) GoAST() interface{} {
+	return nil
+}
+func (x *BasicLit) GoAST() interface{} {
+	return nil
+}
+func (x *CompositeLit) GoAST() interface{} {
+	return nil
+}
+func (x *ParenExpr) GoAST() interface{} {
+	return nil
+}
+func (x *SelectorExpr) GoAST() interface{} {
+	return nil
+}
+func (x *IndexExpr) GoAST() interface{} {
+	return nil
+}
+func (x *CallExpr) GoAST() interface{} {
+	return nil
+}
+func (x *UnaryExpr) GoAST() interface{} {
+	return nil
+}
+func (x *BinaryExpr) GoAST() interface{} {
+	return nil
+}
+func (x *PairExpr) GoAST() interface{} {
+	return nil
+}
+func (x *TableExpr) GoAST() interface{} {
+	return nil
+}
+func (x *UnitExpr) GoAST() interface{} {
+	return nil
+}
+func (x *KeyValueExpr) GoAST() interface{} {
+	return nil
+}
+func (x *ModelType) GoAST() interface{} {
+	return nil
+}
+func (x *InterfaceType) GoAST() interface{} {
+	return nil
+}
+
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents
 
@@ -448,6 +512,27 @@ func (s *DeclStmt) Name() string {
 	return s.Decl.Name.Name
 }
 
+// Go AST implementations
+//
+func (s *BadStmt) GoAST() interface{} {
+	return nil
+}
+func (s *DeclStmt) GoAST() interface{} {
+	return nil
+}
+func (s *EmptyStmt) GoAST() interface{} {
+	return nil
+}
+func (s *ExprStmt) GoAST() interface{} {
+	return nil
+}
+func (s *AssignStmt) GoAST() interface{} {
+	return nil
+}
+func (s *BlockStmt) GoAST() interface{} {
+	return nil
+}
+
 // ----------------------------------------------------------------------------
 // Declarations
 
@@ -514,6 +599,15 @@ func (s *KindSpec) End() token.Pos {
 //
 func (s *ImportSpec) specNode() {}
 func (s *KindSpec) specNode()   {}
+
+// Go AST implementations
+//
+func (s *ImportSpec) GoAST() interface{} {
+	return nil
+}
+func (s *KindSpec) GoAST() interface{} {
+	return nil
+}
 
 // A declaration is represented by one of the following declaration nodes.
 //
@@ -604,6 +698,24 @@ func (d *VarDecl) declNode()       {}
 func (d *InterfaceDecl) declNode() {}
 func (d *ModelDecl) declNode()     {}
 
+// GoAST implementations
+//
+func (d *BadDecl) GoAST() interface{} {
+	return nil
+}
+func (d *GenDecl) GoAST() interface{} {
+	return nil
+}
+func (d *VarDecl) GoAST() interface{} {
+	return nil
+}
+func (d *InterfaceDecl) GoAST() interface{} {
+	return nil
+}
+func (d *ModelDecl) GoAST() interface{} {
+	return nil
+}
+
 // ----------------------------------------------------------------------------
 // Files and packages
 
@@ -642,6 +754,10 @@ func (f *File) End() token.Pos {
 	return f.Name.End()
 }
 
+func (f *File) GoAST() interface{} {
+	return nil
+}
+
 // A Package node represents a set of source files
 // collectively building a Go package.
 //
@@ -654,3 +770,7 @@ type Package struct {
 
 func (p *Package) Pos() token.Pos { return token.NoPos }
 func (p *Package) End() token.Pos { return token.NoPos }
+
+func (p *Package) GoAST() interface{} {
+	return nil
+}
