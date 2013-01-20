@@ -1,9 +1,9 @@
 package parser
 
 import (
+	"go/token"
 	"bytes"
 	"fmt"
-	"go/token"
 	"log"
 	"strings"
 	"unicode"
