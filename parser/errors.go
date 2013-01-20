@@ -5,7 +5,7 @@
 package parser
 
 import (
-	"boosd/token"
+	"go/token"
 	"fmt"
 	"io"
 	"sort"

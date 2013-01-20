@@ -7,7 +7,7 @@
 package parser
 
 import (
-	"boosd/token"
+	"go/token"
 	"fmt"
 	"strconv"
 )

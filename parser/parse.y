@@ -7,8 +7,7 @@
 package parser
 
 import (
-	"boosd/token"
-	"fmt"
+	"go/token"
 )
 
 %}
@@ -240,11 +239,11 @@ expr:	'(' expr ')'
 	}
 |	expr '^' expr
 	{
-		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.POW}
+		$$ = &BinaryExpr{X:$1, Y:$3, Op:token.XOR}
 	}
 |	'-' expr %prec UMINUS
 	{
-		$$ = &UnaryExpr{X:$2, Op:token.POW}
+		$$ = &UnaryExpr{X:$2, Op:token.SUB}
 	}
 |	ident '(' expr_list ')' %prec FN_CALL
 	{

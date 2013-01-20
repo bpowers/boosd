@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"boosd/token"
+	"go/token"
 )
 
 type ObjectKind int
