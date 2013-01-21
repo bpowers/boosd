@@ -10,7 +10,7 @@ type Sim interface {
 	Model() Model
 
 	RunTo(t float64) error
-	RunToEnd()
+	RunToEnd() error
 
 	GetValue(name string) float64
 	GetValueSeries(name string) [][2]float64

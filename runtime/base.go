@@ -13,17 +13,41 @@ type Timespec struct {
 
 // TODO: define useful methods on table
 type Table [2][]float64
+type Data map[string]float64
 
 type BaseSim struct {
-	Parent   Model
-	Timespec Timespec
+	Parent Model
+	Time   Timespec
 
-	Tables map[string]Table
-	Curr   map[string]float64
-	Next   map[string]float64
-	// TODO: eventually we should pull constants out into their
-	// own map
-	//Constants map[string]float64
+	Series []Data
+
+	Tables    map[string]Table
+	Curr      Data
+	Next      Data
+	Constants Data
+
+	// Calc{Flows,Stocks} are used by the RunTo* functions
+	CalcFlows  func(s BaseSim, dt float64) error
+	CalcStocks func(s BaseSim, dt float64) error
+}
+
+func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Data) {
+	s.Parent = m
+	s.Time = ts
+
+	capSeries := int((ts.End-ts.Start)/ts.SaveStep) + 1
+	s.Series = make([]Data, 0, capSeries)
+
+	s.Tables = tables
+	s.Constants = consts
+
+	s.Curr = Data{}
+	s.Next = Data{}
+
+	// initialize Curr with constants
+	for k, v := range s.Constants {
+		s.Curr[k] = v
+	}
 }
 
 func (s *BaseSim) Model() Model {
@@ -34,7 +58,8 @@ func (s *BaseSim) RunTo(t float64) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (s *BaseSim) RunToEnd() {
+func (s *BaseSim) RunToEnd() error {
+	return s.RunTo(s.Time.End)
 }
 
 func (s *BaseSim) GetValue(name string) float64 {
@@ -49,10 +74,15 @@ func (s *BaseSim) SetValue(name string, val float64) error {
 	return nil
 }
 
-type BaseModel struct {
-	Tables    map[string]Table
-	Constants map[string]float64
+// Step is the internal function that does one round of whatever
+// integration method is in use.
+//
+// TODO: implement more than just euler.
+func (s *BaseSim) Step() {
+
 }
+
+type BaseModel struct{}
 
 func (m *BaseModel) Attr(name string) interface{} {
 	return nil
