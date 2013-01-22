@@ -1,3 +1,9 @@
+// Copyright 2013 Bobby Powers. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// this is work on figuring out what we need to codegen
+
 package main
 
 import (
