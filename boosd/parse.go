@@ -1,5 +1,5 @@
 //line parse.y:6
-package parser
+package boosd
 
 import __yyfmt__ "fmt"
 

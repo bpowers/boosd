@@ -4,7 +4,7 @@
 
 %{
 
-package parser
+package boosd
 
 import (
 	"go/token"
