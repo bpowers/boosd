@@ -5,7 +5,7 @@
 package main
 
 import (
-	"boosd/parser"
+	"boosd/boosd"
 	"bufio"
 	"bytes"
 	"flag"
@@ -62,12 +62,12 @@ func main() {
 	file := fset.AddFile(filename, fset.Base(), len(mdl))
 
 	// and parse
-	pkg := parser.Parse(file, string(mdl))
+	pkg := boosd.Parse(file, string(mdl))
 	if pkg.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}
 	// log.Printf("compilationUnit: %#v\n", f)
-	passScopeChain(pkg)
+	boosd.PassScopeChain(pkg)
 
 	/*
 		mainMdl := pkg.GetModel("main")
@@ -79,7 +79,7 @@ func main() {
 		}
 	*/
 
-	goFile, err := genGo(pkg)
+	goFile, err := boosd.GenGo(pkg)
 	if err != nil {
 		log.Fatalf("generateGoAST(%v): %s", pkg, err)
 	}

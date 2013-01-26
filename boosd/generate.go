@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package boosd
 
 import (
-	. "boosd/parser"
 	"bytes"
 	"go/ast"
 	"go/token"
@@ -23,7 +22,7 @@ func (g *generator) file(f *File) {
 	g.WriteString("package main\n\n")
 }
 
-func genGo(f *File) (*ast.File, error) {
+func GenGo(f *File) (*ast.File, error) {
 	g := &generator{}
 	g.file(f)
 

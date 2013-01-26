@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package boosd
 
 import (
-	. "boosd/parser"
 	//"fmt"
 	//"strings"
 )
@@ -52,7 +51,7 @@ func (p *scopeChain) Visit(node Node) bool {
 	return true
 }
 
-func passScopeChain(f *File) {
+func PassScopeChain(f *File) {
 	pass := scopeChain{scope: f.Scope}
 	pass.Inspect(f)
 }
