@@ -1,7 +1,5 @@
 *~
 y.output
-boosd
-parse.go
 *.o
 *.a
 *.[568vq]

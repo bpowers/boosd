@@ -5,7 +5,7 @@
 package main
 
 import (
-	"boosd/boosd"
+	"github.com/bpowers/boosd/boosd"
 	"bufio"
 	"bytes"
 	"flag"
