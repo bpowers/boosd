@@ -79,7 +79,7 @@ func main() {
 		}
 	*/
 
-	goFile, err := generateGoAST(pkg)
+	goFile, err := genGo(pkg)
 	if err != nil {
 		log.Fatalf("generateGoAST(%v): %s", pkg, err)
 	}

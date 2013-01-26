@@ -6,39 +6,32 @@ package main
 
 import (
 	. "boosd/parser"
-	"fmt"
+	"bytes"
 	"go/ast"
+	"go/token"
+	goparser "go/parser"
 )
 
-type generator struct{}
-
-func (g *generator) declList(list []Decl) ([]ast.Decl, error) {
-	return []ast.Decl{}, nil
+type generator struct{
+	bytes.Buffer
 }
 
-func (g *generator) gen(node Node) (interface{}, error) {
-	var err error
-	switch n := node.(type) {
-	case *File:
-		f := &ast.File{Name: ast.NewIdent("main")}
-		if f.Decls, err = g.declList(n.Decls); err != nil {
-			return nil, err
-		}
-		return f, nil
-	}
-
-	return nil, fmt.Errorf("unimplemented")
+func (g *generator) declList(list []Decl) {
 }
 
-func generateGoAST(f *File) (*ast.File, error) {
-	node, err := (&generator{}).gen(f)
+func (g *generator) file(f *File) {
+	g.WriteString("package main\n\n")
+}
+
+func genGo(f *File) (*ast.File, error) {
+	g := &generator{}
+	g.file(f)
+
+	fset := token.NewFileSet()
+	goFile, err := goparser.ParseFile(fset, "model.go", g, goparser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	if goFile, ok := node.(*ast.File); ok {
-		return goFile, nil
-	}
-
-	return nil, fmt.Errorf("gen(%v): node not an *ast.File", node)
+	return goFile, nil
 }
