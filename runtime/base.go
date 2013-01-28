@@ -5,7 +5,7 @@
 package runtime
 
 import (
-	"fmt"
+	//"fmt"
 )
 
 type Timespec struct {
@@ -30,9 +30,11 @@ type BaseSim struct {
 	Next      Data
 	Constants Data
 
+	saveEvery int64
+	stepNum   int64
+
 	// Calc{Flows,Stocks} are used by the RunTo* functions
-	CalcFlows  func(s BaseSim, dt float64) error
-	CalcStocks func(s BaseSim, dt float64) error
+	Step func(s *BaseSim, dt float64)
 }
 
 func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Data) {
@@ -44,6 +46,9 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Dat
 
 	s.Tables = tables
 	s.Constants = consts
+
+	// round to the nearest integer
+	s.saveEvery = int64(ts.SaveStep/ts.DT + .5)
 
 	s.Curr = Data{}
 	s.Next = Data{}
@@ -58,8 +63,21 @@ func (s *BaseSim) Model() Model {
 	return s.Parent
 }
 
+// RunTo currently implements the Euler method
 func (s *BaseSim) RunTo(t float64) error {
-	return fmt.Errorf("not implemented")
+	for s.Curr["time"] <= t {
+		s.Step(s, s.Time.DT)
+
+		if s.stepNum % s.saveEvery == 0 {
+			s.Series = append(s.Series, s.Curr)
+		}
+		s.stepNum++
+
+		s.Next["time"] = s.Curr["time"] + s.Time.DT
+		s.Curr = s.Next
+		s.Next = Data{}
+	}
+	return nil
 }
 
 func (s *BaseSim) RunToEnd() error {
@@ -82,11 +100,17 @@ func (s *BaseSim) SetValue(name string, val float64) error {
 // integration method is in use.
 //
 // TODO: implement more than just euler.
-func (s *BaseSim) Step() {
+func (s *BaseSim) step() {
 
 }
 
-type BaseModel struct{}
+type BaseModel struct{
+	MName string
+}
+
+func (m *BaseModel) Name() string {
+	return m.MName
+}
 
 func (m *BaseModel) Attr(name string) interface{} {
 	return nil

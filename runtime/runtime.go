@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-var models = make([]Model, 0, 1)
+var models = map[string]Model{}
 
 type Sim interface {
 	Model() Model
@@ -23,6 +23,7 @@ type Sim interface {
 }
 
 type Model interface {
+	Name() string
 	NewSim() Sim
 	Attr(name string) interface{}
 	VarNames() []string
@@ -30,21 +31,23 @@ type Model interface {
 }
 
 func Register(ms ...Model) {
-	models = append(models, ms...)
+	for _, m := range ms {
+		models[m.Name()] = m
+	}
 }
 
 // Init initializes the boosd runtime.
 func Main() {
-	// FIXME: this should be temporary
-	if len(models) != 1 {
-		log.Fatalf("len(%v) != 1", models)
+	m, ok := models["main"]
+	if !ok {
+		log.Fatalf("no main model registered")
 	}
-
-	m := models[0]
 
 	sim := m.NewSim()
 
-	sim.RunToEnd()
+	if err := sim.RunToEnd(); err != nil {
+		log.Fatalf("sim.RunToEnd: %s", err)
+	}
 
 	// TODO: print results
 }

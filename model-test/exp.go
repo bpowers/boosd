@@ -7,7 +7,11 @@
 package main
 
 import (
-	"boosd/runtime"
+	"github.com/bpowers/boosd/runtime"
+)
+
+var (
+	mdlMainName = "main"
 )
 
 type simMain struct {
@@ -16,6 +20,13 @@ type simMain struct {
 
 type mdlMain struct {
 	runtime.BaseModel
+}
+
+func simMainStep(s *runtime.BaseSim, dt float64) {
+	s.Curr["in"] = s.Curr["rate"] * s.Curr["accum"]
+
+	s.Next["rate"] = s.Curr["rate"]
+	s.Next["accum"] = s.Curr["accum"] + s.Curr["in"]*dt
 }
 
 func (m *mdlMain) NewSim() runtime.Sim {
@@ -30,18 +41,24 @@ func (m *mdlMain) NewSim() runtime.Sim {
 
 	s := new(simMain)
 	s.Init(m, ts, tables, consts)
+	s.Step = simMainStep
 
 	// Initialize any constant expressions, stock initials, or
 	// variables
 
 	s.Curr["accum"] = 200
 	s.Curr["rate"] = .07
+	s.Curr["time"] = ts.Start
 
 	return s
 }
 
 func init() {
-	m := new(mdlMain)
+	m := &mdlMain{
+		runtime.BaseModel{
+			MName: mdlMainName,
+		},
+	}
 
 	runtime.Register(m)
 }
