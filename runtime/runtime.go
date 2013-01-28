@@ -7,6 +7,7 @@ package runtime
 import (
 	"fmt"
 	"log"
+	"sort"
 )
 
 var models = map[string]Model{}
@@ -65,9 +66,8 @@ func Main() {
 	}
 	timeSeries := tsRaw[1]
 	series := map[string][]float64{}
-	orderedVars := []string{}
+	orderedVars := sort.StringSlice{}
 
-	fmt.Printf("time")
 	for simName, s := range sims {
 		for _, v := range s.Model().VarNames() {
 			qualName := fmt.Sprintf("%s.%s", simName, v)
@@ -75,10 +75,16 @@ func Main() {
 			if err != nil {
 				log.Fatalf("s.ValueSeries(%s): %s", v, err)
 			}
-			fmt.Printf("\t%s", v)
 			series[qualName] = data[1]
 			orderedVars = append(orderedVars, qualName)
 		}
+	}
+
+	orderedVars.Sort()
+
+	fmt.Printf("time")
+	for _, v := range orderedVars {
+		fmt.Printf("\t%s", v)
 	}
 	fmt.Printf("\n")
 

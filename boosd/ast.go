@@ -354,10 +354,20 @@ func (*KeyValueExpr) exprNode() {}
 func (*ModelType) exprNode()     {}
 func (*InterfaceType) exprNode() {}
 
-func (i Ident) String() string {
-	return fmt.Sprintf("<id '%s'>", i.Name)
+func (bl *BasicLit) String() string {
+	return bl.Value
 }
 
+func (i Ident) String() string {
+	return fmt.Sprintf(`s.Curr["%s"]`, i.Name)
+}
+func (x *BinaryExpr) String() string {
+	return fmt.Sprintf("((%s) %s (%s))", x.X, x.Op, x.Y)
+}
+// FIXME: this isn't correct
+func (x *UnitExpr) String() string {
+	return fmt.Sprintf("%s", x.X)
+}
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents
 

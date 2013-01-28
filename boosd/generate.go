@@ -44,6 +44,9 @@ func simMainStep(s *runtime.BaseSim, dt float64) {
 {{range $.Equations}}
 	{{.}}
 {{end}}
+{{range $.Stocks}}
+	{{.}}
+{{end}}
 }
 
 func (m *mdlMain) NewSim() runtime.Sim {
@@ -59,9 +62,6 @@ func (m *mdlMain) NewSim() runtime.Sim {
 	s := new(simMain)
 	s.Init(m, ts, tables, consts)
 	s.Step = simMainStep
-
-	// Initialize any constant expressions, stock initials, or
-	// variables
 
 {{range $.Initials}}
 	{{.}}
@@ -93,6 +93,7 @@ type generator struct {
 	Vars      map[string]runtime.Var
 	Time      runtime.Timespec
 	Equations []string
+	Stocks    []string
 	Initials  []string
 }
 
@@ -115,22 +116,39 @@ func constEval(e Expr) (v float64, err error) {
 	return strconv.ParseFloat(basic.Value, 64)
 }
 
+func isConst(e Expr) bool {
+	if _, err := constEval(e); err == nil {
+		return true
+	}
+	return false
+}
+
+func kvConvert(e Expr) (k string, v Expr, err error) {
+	kv, ok := e.(*KeyValueExpr)
+	if !ok {
+		err = fmt.Errorf("e %T not KVeyValueExpr: %v", e, e)
+		return
+	}
+	ident, ok := kv.Key.(*Ident)
+	if !ok {
+		err = fmt.Errorf("e key %T not Ident: %v", kv.Key, kv.Key)
+		return
+	}
+	return ident.Name, kv.Value, nil
+}
+
 func (g *generator) timespec(elts []Expr) {
 	for _, e := range elts {
-		kv, ok := e.(*KeyValueExpr)
-		if !ok {
-			panic(fmt.Sprintf("timespec fields %T not KVExprs", e))
+		k, val, err := kvConvert(e)
+		if err != nil {
+			panic(fmt.Sprintf("kvConvert(%v): %s", e, err))
 		}
-		ident, ok := kv.Key.(*Ident)
-		if !ok {
-			panic(fmt.Sprintf("timespec key %T not Ident", kv.Key))
-		}
-		v, err := constEval(kv.Value)
+		v, err := constEval(val)
 		if err != nil {
 			panic(fmt.Sprintf("timespec constEval(%v): %s",
-				kv.Value, err))
+				val, err))
 		}
-		switch ident.Name {
+		switch k {
 		case "start":
 			g.Time.Start = v
 		case "end":
@@ -140,8 +158,7 @@ func (g *generator) timespec(elts []Expr) {
 		case "save_step":
 			g.Time.SaveStep = v
 		default:
-			panic(fmt.Sprintf("timespec unknown key %s",
-				ident.Name))
+			panic(fmt.Sprintf("timespec unknown key %s", k))
 		}
 	}
 }
@@ -153,6 +170,56 @@ func varFromDecl(d *VarDecl) (v runtime.Var, err error) {
 		d.Type = identAux
 	}
 	return runtime.Var{d.Name.Name, runtime.TypeForName(d.Type.Name)}, nil
+}
+
+func (g *generator) initial(name string, expr Expr) {
+	val, err := constEval(expr)
+	if err != nil {
+		panic(fmt.Sprintf("initial(%s): non-const %v", name, expr))
+	}
+	init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
+	g.Initials = append(g.Initials, init)
+}
+
+func (g *generator) stock(name string, expr Expr) {
+	cl, ok := expr.(*CompositeLit)
+	if !ok {
+		panic(fmt.Sprintf("stock is %T, not CompositeLit", expr))
+	}
+	for _, e := range cl.Elts {
+		k, val, err := kvConvert(e)
+		if err != nil {
+			panic(fmt.Sprintf("kvConvert(%s): %s", name, err))
+		}
+		switch k {
+		case "initial":
+			g.initial(name, val)
+		case "inflow":
+			eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"] + %s*dt`, name, name, val)
+			g.Stocks = append(g.Stocks, eqn)
+		default:
+			panic(fmt.Sprintf("stock(%s): unknown k %s",
+				name, k))
+		}
+	}
+}
+
+func (g *generator) expr(name string, expr Expr) {
+	log.Printf("%s: %s", name, expr)
+	if g.Vars[name].Type == runtime.TyAux {
+		if isConst(expr) {
+			log.Printf("yess is const %s", name)
+			g.initial(name, expr)
+			eqn := fmt.Sprintf(`s.Next["%s"] = %s`, name, expr)
+			g.Stocks = append(g.Stocks, eqn)
+		} else {
+			eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
+			g.Equations = append(g.Equations, eqn)
+		}
+	} else {
+		eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
+		g.Equations = append(g.Equations, eqn)
+	}
 }
 
 func (g *generator) assign(s *AssignStmt) {
@@ -170,6 +237,11 @@ func (g *generator) assign(s *AssignStmt) {
 		panic(fmt.Sprintf("varFromDecl(%v): %s", s.Lhs, err))
 	}
 	g.Vars[v.Name] = v
+	if v.Type == runtime.TyStock {
+		g.stock(v.Name, s.Rhs)
+	} else {
+		g.expr(v.Name, s.Rhs)
+	}
 }
 
 func (g *generator) stmt(s Stmt) {
@@ -217,6 +289,7 @@ func GenGo(f *File) (*ast.File, error) {
 	g := new(generator)
 	g.Vars = map[string]runtime.Var{}
 	g.Equations = []string{}
+	g.Stocks = []string{}
 	g.Initials = []string{}
 	code := g.file(f)
 
