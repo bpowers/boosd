@@ -11,6 +11,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
+	"strconv"
 	"text/template"
 )
 
@@ -97,7 +99,87 @@ type generator struct {
 func (g *generator) declList(list []Decl) {
 }
 
+func (g *generator) timespec(elts []Expr) {
+	for _, e := range elts {
+		kv, ok := e.(*KeyValueExpr)
+		if !ok {
+			panic(fmt.Sprintf("timespec fields %T not KVExprs", e))
+		}
+		ident, ok := kv.Key.(*Ident)
+		if !ok {
+			panic(fmt.Sprintf("timespec key %T not Ident", kv.Key))
+		}
+		val, ok := kv.Value.(*UnitExpr)
+		if !ok {
+			panic(fmt.Sprintf("timespec val %T not UnitExpr",
+				kv.Value))
+		}
+		basic, ok := val.X.(*BasicLit)
+		if !ok {
+			panic(fmt.Sprintf("timespec val %T not BasicLit",
+				val.X))
+		}
+		v, err := strconv.ParseFloat(basic.Value, 64)
+		if err != nil {
+			panic(fmt.Sprintf("timespec: unable to parse %s",
+				basic.Value))
+		}
+		switch ident.Name {
+		case "start":
+			g.Time.Start = v
+		case "end":
+			g.Time.End = v
+		case "dt":
+			g.Time.DT = v
+		case "save_step":
+			g.Time.SaveStep = v
+		default:
+			panic(fmt.Sprintf("timespec unknown key %s",
+				ident.Name))
+		}
+	}
+}
+
+func (g *generator) assign(s *AssignStmt) {
+	if s.Lhs.Name.Name == "timespec" {
+		c, ok := s.Rhs.(*CompositeLit)
+		if !ok {
+			panic(fmt.Sprintf("timespec is %T, not CompositeLit",
+				s.Rhs))
+		}
+		g.timespec(c.Elts)
+	}
+}
+
+func (g *generator) stmt(s Stmt) {
+	switch ss := s.(type) {
+	case *AssignStmt:
+		g.assign(ss)
+	default:
+		log.Printf("stmt(%T): unimplemented - %v", s, s)
+	}
+}
+
+func (g *generator) model(m *ModelDecl) {
+	if m.Name.Name != "main" {
+		log.Printf("non-main model not supported: %v", m)
+		return
+	}
+	for _, s := range m.Body.List {
+		g.stmt(s)
+	}
+}
+
 func (g *generator) file(f *File) []byte {
+	for _, d := range f.Decls {
+		md, ok := d.(*ModelDecl)
+		if !ok {
+			log.Printf("top level decl that isn't a model: %v (%T)", d, d)
+			continue
+		}
+		g.model(md)
+	}
+
 	var buf bytes.Buffer
 	tmpl := template.New("model.go")
 	if _, err := tmpl.Parse(modelTmpl); err != nil {
