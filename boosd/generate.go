@@ -99,6 +99,8 @@ type generator struct {
 func (g *generator) declList(list []Decl) {
 }
 
+// constEval returns the float64 value represented by Expr, or an
+// error if it can't be evaluated at compile time.
 func constEval(e Expr) (v float64, err error) {
 	val, ok := e.(*UnitExpr)
 	if !ok {
@@ -144,6 +146,8 @@ func (g *generator) timespec(elts []Expr) {
 	}
 }
 
+
+
 func (g *generator) assign(s *AssignStmt) {
 	if s.Lhs.Name.Name == "timespec" {
 		c, ok := s.Rhs.(*CompositeLit)
@@ -152,7 +156,9 @@ func (g *generator) assign(s *AssignStmt) {
 				s.Rhs))
 		}
 		g.timespec(c.Elts)
+		return
 	}
+	v, err := varFromDecl(s.Lhs)
 }
 
 func (g *generator) stmt(s Stmt) {

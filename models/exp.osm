@@ -1,15 +1,3 @@
-/*
-ExponentialGrowth model {
-//main model {
-	rate = .1
-	in flow = rate * accum
-
-	accum stock = {
-		inital: 1000
-		inflow: in
-	}
-}*/
-
 main model {
         timespec = {
                 start:     0
