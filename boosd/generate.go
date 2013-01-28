@@ -209,10 +209,8 @@ func (g *generator) stock(name string, expr Expr) {
 }
 
 func (g *generator) expr(name string, expr Expr) {
-	log.Printf("%s: %s", name, expr)
 	if g.Vars[name].Type == runtime.TyAux {
 		if isConst(expr) {
-			log.Printf("yess is const %s", name)
 			g.initial(name, expr)
 			eqn := fmt.Sprintf(`s.Next["%s"] = %s`, name, expr)
 			g.Stocks = append(g.Stocks, eqn)
