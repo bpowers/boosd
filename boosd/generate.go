@@ -99,6 +99,20 @@ type generator struct {
 func (g *generator) declList(list []Decl) {
 }
 
+func constEval(e Expr) (v float64, err error) {
+	val, ok := e.(*UnitExpr)
+	if !ok {
+		err = fmt.Errorf("timespec val %T not UnitExpr", e)
+		return
+	}
+	basic, ok := val.X.(*BasicLit)
+	if !ok {
+		err = fmt.Errorf("timespec val %T not BasicLit", val.X)
+		return
+	}
+	return strconv.ParseFloat(basic.Value, 64)
+}
+
 func (g *generator) timespec(elts []Expr) {
 	for _, e := range elts {
 		kv, ok := e.(*KeyValueExpr)
@@ -109,20 +123,10 @@ func (g *generator) timespec(elts []Expr) {
 		if !ok {
 			panic(fmt.Sprintf("timespec key %T not Ident", kv.Key))
 		}
-		val, ok := kv.Value.(*UnitExpr)
-		if !ok {
-			panic(fmt.Sprintf("timespec val %T not UnitExpr",
-				kv.Value))
-		}
-		basic, ok := val.X.(*BasicLit)
-		if !ok {
-			panic(fmt.Sprintf("timespec val %T not BasicLit",
-				val.X))
-		}
-		v, err := strconv.ParseFloat(basic.Value, 64)
+		v, err := constEval(kv.Value)
 		if err != nil {
-			panic(fmt.Sprintf("timespec: unable to parse %s",
-				basic.Value))
+			panic(fmt.Sprintf("timespec constEval(%v): %s",
+				kv.Value, err))
 		}
 		switch ident.Name {
 		case "start":
