@@ -186,6 +186,7 @@ func (g *generator) stock(name string, expr Expr) {
 	if !ok {
 		panic(fmt.Sprintf("stock is %T, not CompositeLit", expr))
 	}
+	var in, out string
 	for _, e := range cl.Elts {
 		k, val, err := kvConvert(e)
 		if err != nil {
@@ -195,13 +196,16 @@ func (g *generator) stock(name string, expr Expr) {
 		case "initial":
 			g.initial(name, val)
 		case "inflow":
-			eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"] + %s*dt`, name, name, val)
-			g.Stocks = append(g.Stocks, eqn)
+			in = fmt.Sprintf("%s", val)
+		case "outflow":
+			out = fmt.Sprintf("-(%s)", val)
 		default:
 			panic(fmt.Sprintf("stock(%s): unknown k %s",
 				name, k))
 		}
 	}
+	eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"] + (%s %s)*dt`, name, name, in, out)
+	g.Stocks = append(g.Stocks, eqn)
 }
 
 func (g *generator) expr(name string, expr Expr) {
