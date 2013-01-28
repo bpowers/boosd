@@ -5,8 +5,9 @@
 package boosd
 
 import (
-//"fmt"
-//"strings"
+	"fmt"
+	"os"
+	"strings"
 )
 
 type scopeChain struct {
@@ -26,6 +27,7 @@ func (p *scopeChain) Visit(node Node) bool {
 		return true
 	}
 
+	//fmt.Fprintf(os.Stderr, "%s(%T)\n", strings.Repeat("  ", p.depth), node)
 	switch n := node.(type) {
 	case *File:
 		//typeScope = append(typeScope, n.Scope)
@@ -44,7 +46,6 @@ func (p *scopeChain) Visit(node Node) bool {
 			panic("unknown variable referenced: " + n.Name)
 		}
 	}
-	//fmt.Printf("%s(%T)\n", strings.Repeat("  ", p.depth), node)
 	//fmt.Printf("%s%#v\n", indent, node)
 	p.depth++
 

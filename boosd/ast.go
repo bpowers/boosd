@@ -5,6 +5,7 @@
 package boosd
 
 import (
+	"fmt"
 	"go/token"
 )
 
@@ -352,6 +353,10 @@ func (*KeyValueExpr) exprNode() {}
 
 func (*ModelType) exprNode()     {}
 func (*InterfaceType) exprNode() {}
+
+func (i Ident) String() string {
+	return fmt.Sprintf("<id '%s'>", i.Name)
+}
 
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents

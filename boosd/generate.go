@@ -6,9 +6,12 @@ package boosd
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/bpowers/boosd/runtime"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"text/template"
 )
 
 const modelTmpl = `
@@ -21,9 +24,9 @@ import (
 var (
 	mdlMainName = "main"
 	mdlMainVars = map[string]runtime.Var{
-		"accum": runtime.Var{"accum", runtime.TyStock},
-		"in":    runtime.Var{"in", runtime.TyFlow},
-		"rate":  runtime.Var{"rate", runtime.TyVar},
+{{range $.Vars}}
+		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.TyVar},
+{{end}}
 	}
 )
 
@@ -36,18 +39,17 @@ type mdlMain struct {
 }
 
 func simMainStep(s *runtime.BaseSim, dt float64) {
-	s.Curr["in"] = s.Curr["rate"] * s.Curr["accum"]
-
-	s.Next["rate"] = s.Curr["rate"]
-	s.Next["accum"] = s.Curr["accum"] + s.Curr["in"]*dt
+{{range $.Equations}}
+	{{.}}
+{{end}}
 }
 
 func (m *mdlMain) NewSim() runtime.Sim {
 	ts := runtime.Timespec{
-		Start:    0,
-		End:      50,
-		DT:       .5,
-		SaveStep: 1,
+		Start:    {{$.Time.Start}},
+		End:      {{$.Time.End}},
+		DT:       {{$.Time.DT}},
+		SaveStep: {{$.Time.SaveStep}},
 	}
 	tables := map[string]runtime.Table{}
 	consts := runtime.Data{}
@@ -59,8 +61,9 @@ func (m *mdlMain) NewSim() runtime.Sim {
 	// Initialize any constant expressions, stock initials, or
 	// variables
 
-	s.Curr["accum"] = 200
-	s.Curr["rate"] = .07
+{{range $.Initials}}
+	{{.}}
+{{end}}
 	s.Curr["time"] = ts.Start
 
 	runtime.RegisterSim("main", s)
@@ -85,22 +88,34 @@ func main() {
 `
 
 type generator struct {
-	bytes.Buffer
+	Vars      map[string]runtime.Var
+	Time      runtime.Timespec
+	Equations []string
+	Initials  []string
 }
 
 func (g *generator) declList(list []Decl) {
 }
 
-func (g *generator) file(f *File) {
-	g.WriteString("package main\n\n")
+func (g *generator) file(f *File) []byte {
+	var buf bytes.Buffer
+	tmpl := template.New("model.go")
+	if _, err := tmpl.Parse(modelTmpl); err != nil {
+		panic(fmt.Sprintf("Parse(modelTmpl): %s", err))
+	}
+	if err := tmpl.Execute(&buf, g); err != nil {
+		panic(fmt.Sprintf("Execute(%v): %s", g, err))
+	}
+
+	return buf.Bytes()
 }
 
 func GenGo(f *File) (*ast.File, error) {
 	g := &generator{}
-	g.file(f)
+	code := g.file(f)
 
 	fset := token.NewFileSet()
-	goFile, err := parser.ParseFile(fset, "model.go", g, 0)
+	goFile, err := parser.ParseFile(fset, "model.go", code, 0)
 	if err != nil {
 		return nil, err
 	}

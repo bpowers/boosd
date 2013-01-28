@@ -4,7 +4,9 @@
 
 package boosd
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // A Visitor's Visit method is invoked for each node encountered by Walk.
 // If the result visitor w is not nil, Walk visits each of the children
