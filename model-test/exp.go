@@ -16,7 +16,6 @@ var (
 		"accum": runtime.Var{"accum", runtime.TyStock},
 		"in":    runtime.Var{"in", runtime.TyFlow},
 		"rate":  runtime.Var{"rate", runtime.TyVar},
-		"time":  runtime.Var{"time", runtime.TyVar},
 	}
 )
 

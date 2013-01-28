@@ -18,8 +18,8 @@ type Sim interface {
 	RunTo(t float64) error
 	RunToEnd() error
 
-	GetValue(name string) float64
-	GetValueSeries(name string) [][2]float64
+	Value(name string) (float64, error)
+	ValueSeries(name string) ([2][]float64, error)
 
 	SetValue(name string, val float64) error
 }
@@ -59,9 +59,34 @@ func Main() {
 		log.Fatalf("sim.RunToEnd: %s", err)
 	}
 
+	tsRaw, err := sim.ValueSeries("time")
+	if err != nil {
+		log.Fatalf("sim.ValueSeries(time): %s", err)
+	}
+	timeSeries := tsRaw[1]
+	series := map[string][]float64{}
+	orderedVars := []string{}
+
+	fmt.Printf("time")
 	for simName, s := range sims {
 		for _, v := range s.Model().VarNames() {
-			fmt.Printf("%s.%s\n", simName, v)
+			qualName := fmt.Sprintf("%s.%s", simName, v)
+			data, err := s.ValueSeries(v)
+			if err != nil {
+				log.Fatalf("s.ValueSeries(%s): %s", v, err)
+			}
+			fmt.Printf("\t%s", v)
+			series[qualName] = data[1]
+			orderedVars = append(orderedVars, qualName)
 		}
+	}
+	fmt.Printf("\n")
+
+	for i, t := range timeSeries {
+		fmt.Printf("%f", t)
+		for _, v := range orderedVars {
+			fmt.Printf("\t%f", series[v][i])
+		}
+		fmt.Printf("\n")
 	}
 }

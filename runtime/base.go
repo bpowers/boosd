@@ -4,7 +4,9 @@
 
 package runtime
 
-import ()
+import (
+	"fmt"
+)
 
 type Timespec struct {
 	Start    float64
@@ -28,6 +30,8 @@ type BaseSim struct {
 	Next      Data
 	Constants Data
 
+	timeSeries []float64
+
 	saveEvery int64
 	stepNum   int64
 
@@ -41,6 +45,7 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Dat
 
 	capSeries := int((ts.End-ts.Start)/ts.SaveStep) + 1
 	s.Series = make([]Data, 0, capSeries)
+	s.timeSeries = make([]float64, 0, capSeries)
 
 	s.Tables = tables
 	s.Constants = consts
@@ -67,6 +72,7 @@ func (s *BaseSim) RunTo(t float64) error {
 		s.Step(s, s.Time.DT)
 
 		if s.stepNum%s.saveEvery == 0 {
+			s.timeSeries = append(s.timeSeries, s.Curr["time"])
 			s.Series = append(s.Series, s.Curr)
 		}
 		s.stepNum++
@@ -82,12 +88,18 @@ func (s *BaseSim) RunToEnd() error {
 	return s.RunTo(s.Time.End)
 }
 
-func (s *BaseSim) GetValue(name string) float64 {
-	return -1
+func (s *BaseSim) Value(name string) (v float64, err error) {
+	err = fmt.Errorf("unknown var %s", name)
+	return
 }
 
-func (s *BaseSim) GetValueSeries(name string) [][2]float64 {
-	return nil
+func (s *BaseSim) ValueSeries(name string) (r [2][]float64, err error) {
+	r[0] = s.timeSeries
+	r[1] = make([]float64, len(s.Series))
+	for i, d := range s.Series {
+		r[1][i] = d[name]
+	}
+	return
 }
 
 func (s *BaseSim) SetValue(name string, val float64) error {
