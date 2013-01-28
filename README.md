@@ -30,6 +30,13 @@ The basic idea is to parse the above model into an AST, and then
 convert that AST into a go AST, which is compiled into a static go
 binary.
 
+development
+-----------
+
+I'm currently testing by running a commandline like this:
+
+    time (f=`mktemp --suffix=.go`; go install && boosd models/exp.osm >$f; go run $f; rm $f)
+
 license
 -------
 
