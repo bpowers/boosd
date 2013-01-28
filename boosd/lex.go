@@ -5,9 +5,9 @@
 package boosd
 
 import (
-	"go/token"
 	"bytes"
 	"fmt"
+	"go/token"
 	"log"
 	"strings"
 	"unicode"

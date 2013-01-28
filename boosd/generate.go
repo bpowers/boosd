@@ -7,11 +7,11 @@ package boosd
 import (
 	"bytes"
 	"go/ast"
-	"go/token"
 	goparser "go/parser"
+	"go/token"
 )
 
-type generator struct{
+type generator struct {
 	bytes.Buffer
 }
 

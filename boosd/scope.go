@@ -7,9 +7,9 @@
 package boosd
 
 import (
-	"go/token"
 	"bytes"
 	"fmt"
+	"go/token"
 )
 
 // A Scope maintains the set of named language entities declared

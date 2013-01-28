@@ -5,8 +5,8 @@
 package boosd
 
 import (
-	"go/token"
 	"fmt"
+	"go/token"
 	"io"
 	"sort"
 )
