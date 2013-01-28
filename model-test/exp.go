@@ -12,6 +12,12 @@ import (
 
 var (
 	mdlMainName = "main"
+	mdlMainVars = map[string]runtime.Var{
+		"accum": runtime.Var{"accum", runtime.TyStock},
+		"in":    runtime.Var{"in", runtime.TyFlow},
+		"rate":  runtime.Var{"rate", runtime.TyVar},
+		"time":  runtime.Var{"time", runtime.TyVar},
+	}
 )
 
 type simMain struct {
@@ -50,6 +56,8 @@ func (m *mdlMain) NewSim() runtime.Sim {
 	s.Curr["rate"] = .07
 	s.Curr["time"] = ts.Start
 
+	runtime.RegisterSim("main", s)
+
 	return s
 }
 
@@ -57,10 +65,11 @@ func init() {
 	m := &mdlMain{
 		runtime.BaseModel{
 			MName: mdlMainName,
+			Vars:  mdlMainVars,
 		},
 	}
 
-	runtime.Register(m)
+	runtime.RegisterModel(m)
 }
 
 func main() {

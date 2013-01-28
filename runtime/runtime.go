@@ -5,10 +5,12 @@
 package runtime
 
 import (
+	"fmt"
 	"log"
 )
 
 var models = map[string]Model{}
+var sims = map[string]Sim{}
 
 type Sim interface {
 	Model() Model
@@ -30,10 +32,18 @@ type Model interface {
 	VarInfo(name string) map[string]interface{}
 }
 
-func Register(ms ...Model) {
+func RegisterModel(ms ...Model) {
 	for _, m := range ms {
 		models[m.Name()] = m
 	}
+}
+
+func RegisterSim(name string, s Sim) {
+	if existing, ok := sims[name]; ok {
+		panic(fmt.Sprintf("sim %s already registered (%#v)",
+			name, existing))
+	}
+	sims[name] = s
 }
 
 // Init initializes the boosd runtime.
@@ -49,5 +59,9 @@ func Main() {
 		log.Fatalf("sim.RunToEnd: %s", err)
 	}
 
-	// TODO: print results
+	for simName, s := range sims {
+		for _, v := range s.Model().VarNames() {
+			fmt.Printf("%s.%s\n", simName, v)
+		}
+	}
 }

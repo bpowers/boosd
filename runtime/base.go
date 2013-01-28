@@ -4,9 +4,7 @@
 
 package runtime
 
-import (
-	//"fmt"
-)
+import ()
 
 type Timespec struct {
 	Start    float64
@@ -68,7 +66,7 @@ func (s *BaseSim) RunTo(t float64) error {
 	for s.Curr["time"] <= t {
 		s.Step(s, s.Time.DT)
 
-		if s.stepNum % s.saveEvery == 0 {
+		if s.stepNum%s.saveEvery == 0 {
 			s.Series = append(s.Series, s.Curr)
 		}
 		s.stepNum++
@@ -104,8 +102,9 @@ func (s *BaseSim) step() {
 
 }
 
-type BaseModel struct{
+type BaseModel struct {
 	MName string
+	Vars  map[string]Var
 }
 
 func (m *BaseModel) Name() string {
@@ -117,9 +116,28 @@ func (m *BaseModel) Attr(name string) interface{} {
 }
 
 func (m *BaseModel) VarNames() []string {
-	return nil
+	names := make([]string, 0, len(m.Vars))
+	for n, _ := range m.Vars {
+		names = append(names, n)
+	}
+	return names
 }
 
 func (m *BaseModel) VarInfo(name string) map[string]interface{} {
 	return nil
+}
+
+type VarType int
+
+const (
+	TyStock VarType = iota
+	TyFlow  VarType = iota
+	TyVar   VarType = iota
+	TyTable VarType = iota
+	TyConst VarType = iota
+)
+
+type Var struct {
+	Name string
+	Type VarType
 }
