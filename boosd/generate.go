@@ -7,7 +7,7 @@ package boosd
 import (
 	"bytes"
 	"go/ast"
-	goparser "go/parser"
+	"go/parser"
 	"go/token"
 )
 
@@ -27,7 +27,7 @@ func GenGo(f *File) (*ast.File, error) {
 	g.file(f)
 
 	fset := token.NewFileSet()
-	goFile, err := goparser.ParseFile(fset, "model.go", g, goparser.ParseComments)
+	goFile, err := parser.ParseFile(fset, "model.go", g, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
