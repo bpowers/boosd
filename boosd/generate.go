@@ -27,7 +27,7 @@ var (
 	mdlMainName = "main"
 	mdlMainVars = map[string]runtime.Var{
 {{range $.Vars}}
-		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.TyVar},
+		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},
 {{end}}
 	}
 )
@@ -146,7 +146,14 @@ func (g *generator) timespec(elts []Expr) {
 	}
 }
 
+var identAux = &Ident{Name: "aux"}
 
+func varFromDecl(d *VarDecl) (v runtime.Var, err error) {
+	if d.Type == nil {
+		d.Type = identAux
+	}
+	return runtime.Var{d.Name.Name, runtime.TypeForName(d.Type.Name)}, nil
+}
 
 func (g *generator) assign(s *AssignStmt) {
 	if s.Lhs.Name.Name == "timespec" {
@@ -159,6 +166,10 @@ func (g *generator) assign(s *AssignStmt) {
 		return
 	}
 	v, err := varFromDecl(s.Lhs)
+	if err != nil {
+		panic(fmt.Sprintf("varFromDecl(%v): %s", s.Lhs, err))
+	}
+	g.Vars[v.Name] = v
 }
 
 func (g *generator) stmt(s Stmt) {
@@ -203,7 +214,10 @@ func (g *generator) file(f *File) []byte {
 }
 
 func GenGo(f *File) (*ast.File, error) {
-	g := &generator{}
+	g := new(generator)
+	g.Vars = map[string]runtime.Var{}
+	g.Equations = []string{}
+	g.Initials = []string{}
 	code := g.file(f)
 
 	fset := token.NewFileSet()

@@ -15,7 +15,7 @@ var (
 	mdlMainVars = map[string]runtime.Var{
 		"accum": runtime.Var{"accum", runtime.TyStock},
 		"in":    runtime.Var{"in", runtime.TyFlow},
-		"rate":  runtime.Var{"rate", runtime.TyVar},
+		"rate":  runtime.Var{"rate", runtime.TyAux},
 	}
 )
 

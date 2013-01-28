@@ -142,14 +142,47 @@ func (m *BaseModel) VarInfo(name string) map[string]interface{} {
 type VarType int
 
 const (
-	TyStock VarType = iota
-	TyFlow  VarType = iota
-	TyVar   VarType = iota
-	TyTable VarType = iota
-	TyConst VarType = iota
+	TyAux     VarType = iota
+	TyStock   VarType = iota
+	TyFlow    VarType = iota
+	TyTable   VarType = iota
+	TyConst   VarType = iota
+	TyUnknown VarType = iota
 )
 
 type Var struct {
 	Name string
 	Type VarType
+}
+
+var tyPretty = map[VarType]string{
+	TyAux:   "TyAux",
+	TyStock: "TyStock",
+	TyFlow:  "TyFlow",
+	TyTable: "TyTable",
+	TyConst: "TyConst",
+}
+
+func (vt VarType) String() string {
+	s, ok := tyPretty[vt]
+	if !ok {
+		s = "TyUnknown"
+	}
+	return s
+}
+
+var tyNames = map[string]VarType{
+	"aux":   TyAux,
+	"stock": TyStock,
+	"flow":  TyFlow,
+	"table": TyTable,
+	"const": TyConst,
+}
+
+func TypeForName(n string) VarType {
+	ty, ok := tyNames[n]
+	if !ok {
+		ty = TyUnknown
+	}
+	return ty
 }
