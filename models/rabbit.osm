@@ -1,35 +1,36 @@
-package rabbit_fox
-
 import "kinds"
 
-model smooth callable (variable, delay, initial) {
+Smooth model {
+        variable
+        delay
+        initial
         smooth stock = {
                 biflow: (variable - smooth)/delay
                 intial: initial
         }
 }
 
-model Population `Individuals` {
+Population model `Individuals` {
         initial_population
 
         birth_rate `1/time`
         average_lifespan `time`
 
-	flow migrations = 0
+        flow migrations = 0
         flow births     = population * birth_rate
         flow deaths     = population / avg_lifespan
 
         stock population = {
-		biflow:  migrations
+                biflow:  migrations
                 inflow:  births
-		outflow: deaths
+                outflow: deaths
                 initial: initial_population
         }
 
         avg_population = smooth(population, delay, initial)
 }
 
-model RabbitPopulation `Rabbits` specializes Population {
+RabbitPopulation model `Rabbits` specializes Population {
         carrying_capacity
         consumption_of_rabbits
 
@@ -44,7 +45,7 @@ model RabbitPopulation `Rabbits` specializes Population {
                 consumption_of_rabbits)
 }
 
-model FoxPopulation `Foxes` specializes Population {
+FoxPopulation model `Foxes` specializes Population {
         consumption_of_rabbits `Rabbits`
 
         initial_population = 30 `Foxes`
@@ -58,10 +59,9 @@ model FoxPopulation `Foxes` specializes Population {
         flow deaths = population/avg_lifespan*mortality_lookup[food_availability]
 }
 
-RabbitFox model {
-        sim.integration = "euler"
-
-        time = {
+main model {
+        //sim.integration = "euler"
+        timespec = {
                 start:     0  `years`
                 end:       50 `years`
                 dt:        .5 `months`
@@ -81,13 +81,13 @@ RabbitFox model {
                 consumption_of_rabbits: fox_consumption_of_rabbits
         }
 
-	grass_growth_rate  = .1 `1/year`
-	grass_growth flow  = grass * grass_growth_rate
-	grass_removal flow = 20
+        grass_growth_rate  = .1 `1/year`
+        grass_growth flow  = grass * grass_growth_rate
+        grass_removal flow = 20
 
-	grass stock = {
-		initial: 100000 `m²`
-		inflow:  grass_growth
-		outflow: grass_removal
-	}
+        grass stock = {
+                initial: 100000 `m²`
+                inflow:  grass_growth
+                outflow: grass_removal
+        }
 }
