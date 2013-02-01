@@ -27,8 +27,7 @@ var (
 	mdlMainName = "main"
 	mdlMainVars = map[string]runtime.Var{
 {{range $.Vars}}
-		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},
-{{end}}
+		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
 	}
 )
 
@@ -294,6 +293,7 @@ func GenGo(f *File) (*ast.File, error) {
 	g.Stocks = []string{}
 	g.Initials = []string{}
 	code := g.file(f)
+	log.Printf("c: %s", code)
 
 	fset := token.NewFileSet()
 	goFile, err := parser.ParseFile(fset, "model.go", code, 0)
