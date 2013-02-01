@@ -8,6 +8,7 @@ package boosd
 
 import (
 	"go/token"
+	"fmt"
 )
 
 %}
@@ -330,15 +331,15 @@ pair:	'(' number ',' number ')'
 
 %% /* start of programs */
 
-func Parse(f *token.File, str string) *File {
+func Parse(f *token.File, str string) (*File, error) {
 	// this is weird, but without passing in a reference to this
 	// result object, there isn't another good way to keep the
 	// parser and lexer reentrant.
 	result := &File{}
 	err := boosdParse(newBoosdLex(str, f, result))
 	if err != 0 {
-		return nil
+		return nil, fmt.Errorf("%d parse errors", err)
 	}
 
-	return result
+	return result, nil
 }

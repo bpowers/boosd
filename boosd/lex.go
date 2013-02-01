@@ -91,6 +91,11 @@ func newBoosdLex(input string, file *token.File, result *File) *boosdLex {
 }
 
 func (l *boosdLex) getLine(pos token.Position) string {
+	p := pos.Offset-pos.Column
+	if p < 0 || p >= len(l.s) {
+		return fmt.Sprintf("getLine: o%d c%d, len%d",
+			 pos.Offset, pos.Column, len(l.s))
+	}
 	result := l.s[pos.Offset-pos.Column:]
 	if newline := strings.IndexRune(result, '\n'); newline != -1 {
 		result = result[:newline]

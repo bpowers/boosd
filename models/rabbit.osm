@@ -9,126 +9,6 @@ model smooth callable (variable, delay, initial) {
         }
 }
 
-interface Bathtub {
-	inflow  flow
-	outflow flow
-	level   stock
-}
-
-interface GoToZero {
-	action_to_go_to_zero flow = current_value/time_to_go_to_zero
-	current_value        aux
-	time_to_go_to_zero   aux `time`
-}
-
-interface Decay {
-	flow outflow
-	stock level
-}
-
-// implicitly implements Bathtub, when using Tub you specify the decay
-// rate and the inflow.
-model Tub {
-	rate `1/time`
-	flow inflow
-	flow outflow = level * rate
-	stock level = {
-		inflow:  inflow
-		outflow: outflow
-	}
-}
-
-// implements bathtub
-model CascadedLevels specializes Tub {
-	flow inflow
-	flow toLevel2 = level1 * rate
-	flow toLevel3 = level2 * rate
-	flow outflow  = level3 * rate
-
-	stock level1 = {
-		inflow:  inflow
-		outflow: toLevel2
-	}
-	stock level2 = {
-		inflow:  toLevel2
-		outflow: toLevel3
-	}
-	stock level3 = {
-		inflow:  toLevel2
-		outflow: outflow
-	}
-
-	// aggregated reporting variable
-	level = level1 + level2 + level3
-}
-
-SmoothN model {
-	n      const `dmnl`
-	inflow flow
-	delay  aux   `time`
-
-	rates  [n+1]flow = {
-		rates[0]:  inflow
-		rates[1:]: levels[i]/delay
-	}
-
-	levels [n]stock = {
-		inflow:  rates[i]
-		outflow: rates[i+1]
-	}
-
-	smoothn = levels[n-1]
-}
-
-// a set of levels, where one level's outflow is the inflow to the
-// next level, etc. A cascade is an n-length series of material
-// delays.
-model CascadedN specializes Tub {
-	n      const `dmnl`
-	rate   aux   `time`
-	inflow flow
-
-	rates  [n+1]flow = {
-		rates[0]:  inflow
-		rates[1:]: levels[i]/rate
-	}
-
-	levels [n]stock = {
-		inflow:  rates[i]
-		outflow: rates[i+1]
-	}
-
-	outflow flow = rates[n]
-
-	// aggregated reporting variable.  naming it the same as the
-	// enclosing model signifies that, when used as a function,
-	// the value of this variable is what should be used as the
-	// 'return value'
-	CascadedN = sum(levels)
-}
-
-model Delay3 callable(inflow, delay_time) {
-	dl = delay_time/3
-	Delay3 = Delay3I(inflow, delay_time, dl*inflow)
-}
-
-model Delay3I callable(inflow, delay_time, initial_value) {
-	dl = delay_time/3
-	cascaded = CascadedN(3, dl, inflow)
-	Delay3I = cascaded.outflow
-}
-
-interface Population {
-	flow births
-	flow deaths
-	flow migration
-	stock population = {
-		inflow:  births
-		outflow: deaths
-		biflow:  migration
-	}
-}
-
 model Population `Individuals` {
         initial_population
 
@@ -147,17 +27,6 @@ model Population `Individuals` {
         }
 
         avg_population = smooth(population, delay, initial)
-}
-
-// this model wraps a population model and makes it available to be
-// used anywhere a bathtub model is called for, simply by hooking up 3
-// variables (the 2 flows and an auxiliary) to the Population model
-model BathtubPopulation {
-	Population pop
-
-	flow increasing = pop.inflow
-	flow decreasing = pop.outflow
-	level = pop.population
 }
 
 model RabbitPopulation `Rabbits` specializes Population {
@@ -189,17 +58,15 @@ model FoxPopulation `Foxes` specializes Population {
         flow deaths = population/avg_lifespan*mortality_lookup[food_availability]
 }
 
-model RabbitFox {
+RabbitFox model {
         sim.integration = "euler"
 
         time = {
                 start:     0  `years`
                 end:       50 `years`
-                step:      .5 `months`
+                dt:        .5 `months`
                 save_step: 1  `year`
         }
-
-	time_in_secs `sec` = time
 
         crowding_effect = [(0, 0), (1, 1), (2, 2), (6, 2)][rabbits.crowding]
 

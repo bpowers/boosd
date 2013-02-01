@@ -5,10 +5,11 @@ import __yyfmt__ "fmt"
 
 //line parse.y:7
 import (
+	"fmt"
 	"go/token"
 )
 
-//line parse.y:17
+//line parse.y:18
 type boosdSymType struct {
 	yys    int
 	tok    tok
@@ -65,21 +66,21 @@ const boosdEofCode = 1
 const boosdErrCode = 2
 const boosdMaxDepth = 200
 
-//line parse.y:331
+//line parse.y:332
 
 /* start of programs */
 
-func Parse(f *token.File, str string) *File {
+func Parse(f *token.File, str string) (*File, error) {
 	// this is weird, but without passing in a reference to this
 	// result object, there isn't another good way to keep the
 	// parser and lexer reentrant.
 	result := &File{}
 	err := boosdParse(newBoosdLex(str, f, result))
 	if err != 0 {
-		return nil
+		return nil, fmt.Errorf("%d parse errors", err)
 	}
 
-	return result
+	return result, nil
 }
 
 //line yacctab:1
@@ -432,67 +433,67 @@ boosddefault:
 	switch boosdnt {
 
 	case 1:
-		//line parse.y:67
+		//line parse.y:68
 		{
 			boosdVAL.file.Decls = boosdS[boosdpt-0].decls
 			*boosdlex.(*boosdLex).file = boosdVAL.file
 		}
 	case 2:
-		//line parse.y:73
+		//line parse.y:74
 		{
 		}
 	case 3:
-		//line parse.y:75
+		//line parse.y:76
 		{
 			boosdVAL.strs = append(boosdS[boosdpt-1].strs, boosdS[boosdpt-0].str)
 		}
 	case 4:
-		//line parse.y:81
+		//line parse.y:82
 		{
 		}
 	case 5:
-		//line parse.y:85
+		//line parse.y:86
 		{
 		}
 	case 6:
-		//line parse.y:87
+		//line parse.y:88
 		{
 		}
 	case 7:
-		//line parse.y:92
+		//line parse.y:93
 		{
 		}
 	case 8:
-		//line parse.y:96
+		//line parse.y:97
 		{
 			boosdVAL.expr = nil
 		}
 	case 9:
-		//line parse.y:100
+		//line parse.y:101
 		{
 			boosdVAL.expr = &BasicLit{Kind: token.STRING, Value: boosdS[boosdpt-0].tok.val}
 		}
 	case 10:
-		//line parse.y:106
+		//line parse.y:107
 		{
 			boosdVAL.ids = []*Ident{boosdS[boosdpt-0].id}
 		}
 	case 11:
-		//line parse.y:110
+		//line parse.y:111
 		{
 			boosdVAL.ids = append(boosdS[boosdpt-2].ids, boosdS[boosdpt-0].id)
 		}
 	case 12:
-		//line parse.y:115
+		//line parse.y:116
 		{
 		}
 	case 13:
-		//line parse.y:117
+		//line parse.y:118
 		{
 			boosdVAL.decls = append(boosdS[boosdpt-1].decls, boosdS[boosdpt-0].tlDecl)
 		}
 	case 14:
-		//line parse.y:123
+		//line parse.y:124
 		{
 			if boosdS[boosdpt-6].tok.val == "model" {
 				boosdVAL.tlDecl = &ModelDecl{Name: boosdS[boosdpt-7].id, Body: boosdS[boosdpt-2].block}
@@ -501,209 +502,209 @@ boosddefault:
 			}
 		}
 	case 15:
-		//line parse.y:133
+		//line parse.y:134
 		{
 			boosdVAL.tok = boosdS[boosdpt-0].tok
 		}
 	case 16:
-		//line parse.y:137
+		//line parse.y:138
 		{
 			boosdVAL.tok = boosdS[boosdpt-0].tok
 		}
 	case 17:
-		//line parse.y:142
+		//line parse.y:143
 		{
 		}
 	case 18:
-		//line parse.y:144
+		//line parse.y:145
 		{
 			boosdVAL.id = boosdS[boosdpt-0].id
 		}
 	case 19:
-		//line parse.y:150
+		//line parse.y:151
 		{
 			boosdVAL.block = &BlockStmt{List: []Stmt{}}
 		}
 	case 20:
-		//line parse.y:154
+		//line parse.y:155
 		{
 			boosdVAL.block = boosdS[boosdpt-1].block
 			boosdVAL.block.List = append(boosdS[boosdpt-1].block.List, boosdS[boosdpt-0].stmt)
 		}
 	case 21:
-		//line parse.y:161
+		//line parse.y:162
 		{
 			boosdVAL.stmt = &DeclStmt{boosdS[boosdpt-1].decl}
 		}
 	case 22:
-		//line parse.y:165
+		//line parse.y:166
 		{
 			boosdVAL.stmt = &AssignStmt{Lhs: boosdS[boosdpt-2].decl, Rhs: boosdS[boosdpt-1].expr}
 		}
 	case 23:
-		//line parse.y:172
+		//line parse.y:173
 		{
 			boosdVAL.decl = &VarDecl{Name: boosdS[boosdpt-1].id, Units: boosdS[boosdpt-0].expr}
 		}
 	case 24:
-		//line parse.y:176
+		//line parse.y:177
 		{
 			boosdVAL.decl = &VarDecl{Name: boosdS[boosdpt-2].id, Type: boosdS[boosdpt-1].id, Units: boosdS[boosdpt-0].expr}
 		}
 	case 25:
-		//line parse.y:182
+		//line parse.y:183
 		{
 			boosdVAL.expr = &CompositeLit{Type: NewIdent("stock"), Elts: boosdS[boosdpt-1].exprs}
 		}
 	case 26:
-		//line parse.y:186
+		//line parse.y:187
 		{
 			boosdVAL.expr = &CompositeLit{Type: boosdS[boosdpt-3].id, Elts: boosdS[boosdpt-1].exprs}
 		}
 	case 27:
-		//line parse.y:190
+		//line parse.y:191
 		{
 			boosdVAL.expr = boosdS[boosdpt-0].expr
 		}
 	case 28:
-		//line parse.y:194
+		//line parse.y:195
 		{
 			boosdVAL.expr = boosdS[boosdpt-0].lit
 		}
 	case 29:
-		//line parse.y:199
+		//line parse.y:200
 		{
 			boosdVAL.exprs = []Expr{}
 		}
 	case 30:
-		//line parse.y:203
+		//line parse.y:204
 		{
 			boosdVAL.exprs = append(boosdS[boosdpt-1].exprs, boosdS[boosdpt-0].expr)
 		}
 	case 31:
-		//line parse.y:209
+		//line parse.y:210
 		{
 			boosdVAL.expr = &KeyValueExpr{Key: boosdS[boosdpt-3].id, Value: boosdS[boosdpt-1].expr}
 		}
 	case 32:
-		//line parse.y:215
+		//line parse.y:216
 		{
 			boosdVAL.expr = &UnitExpr{boosdS[boosdpt-1].expr, boosdS[boosdpt-0].expr}
 		}
 	case 33:
-		//line parse.y:221
+		//line parse.y:222
 		{
 			boosdVAL.expr = boosdS[boosdpt-1].expr
 		}
 	case 34:
-		//line parse.y:225
+		//line parse.y:226
 		{
 			boosdVAL.expr = &BinaryExpr{X: boosdS[boosdpt-2].expr, Y: boosdS[boosdpt-0].expr, Op: token.ADD}
 		}
 	case 35:
-		//line parse.y:229
+		//line parse.y:230
 		{
 			boosdVAL.expr = &BinaryExpr{X: boosdS[boosdpt-2].expr, Y: boosdS[boosdpt-0].expr, Op: token.SUB}
 		}
 	case 36:
-		//line parse.y:233
+		//line parse.y:234
 		{
 			boosdVAL.expr = &BinaryExpr{X: boosdS[boosdpt-2].expr, Y: boosdS[boosdpt-0].expr, Op: token.MUL}
 		}
 	case 37:
-		//line parse.y:237
+		//line parse.y:238
 		{
 			boosdVAL.expr = &BinaryExpr{X: boosdS[boosdpt-2].expr, Y: boosdS[boosdpt-0].expr, Op: token.QUO}
 		}
 	case 38:
-		//line parse.y:241
+		//line parse.y:242
 		{
 			boosdVAL.expr = &BinaryExpr{X: boosdS[boosdpt-2].expr, Y: boosdS[boosdpt-0].expr, Op: token.XOR}
 		}
 	case 39:
-		//line parse.y:245
+		//line parse.y:246
 		{
 			boosdVAL.expr = &UnaryExpr{X: boosdS[boosdpt-0].expr, Op: token.SUB}
 		}
 	case 40:
-		//line parse.y:249
+		//line parse.y:250
 		{
 			boosdVAL.expr = &CallExpr{Fun: boosdS[boosdpt-3].id, Args: boosdS[boosdpt-1].exprs}
 		}
 	case 41:
-		//line parse.y:253
+		//line parse.y:254
 		{
 			boosdVAL.expr = &IndexExpr{X: boosdS[boosdpt-3].expr, Index: boosdS[boosdpt-1].expr}
 		}
 	case 42:
-		//line parse.y:257
+		//line parse.y:258
 		{
 			boosdVAL.expr = &IndexExpr{X: boosdS[boosdpt-3].id, Index: boosdS[boosdpt-1].expr}
 		}
 	case 43:
-		//line parse.y:261
+		//line parse.y:262
 		{
 			boosdVAL.expr = boosdS[boosdpt-0].expr
 		}
 	case 44:
-		//line parse.y:265
+		//line parse.y:266
 		{
 			boosdVAL.expr = boosdS[boosdpt-0].expr
 		}
 	case 45:
-		//line parse.y:269
+		//line parse.y:270
 		{
 			boosdVAL.expr = boosdS[boosdpt-0].expr
 		}
 	case 46:
-		//line parse.y:275
+		//line parse.y:276
 		{
 			boosdVAL.expr = &RefExpr{*boosdS[boosdpt-0].id}
 		}
 	case 47:
-		//line parse.y:280
+		//line parse.y:281
 		{
 			boosdVAL.id = &Ident{Name: boosdS[boosdpt-0].tok.val}
 		}
 	case 48:
-		//line parse.y:286
+		//line parse.y:287
 		{
 			boosdVAL.lit = &BasicLit{Kind: token.STRING, Value: boosdS[boosdpt-0].tok.val}
 		}
 	case 49:
-		//line parse.y:292
+		//line parse.y:293
 		{
 			boosdVAL.expr = &BasicLit{Kind: token.FLOAT, Value: boosdS[boosdpt-0].tok.val}
 		}
 	case 50:
-		//line parse.y:298
+		//line parse.y:299
 		{
 			boosdVAL.exprs = make([]Expr, 1, 16)
 			boosdVAL.exprs[0] = boosdS[boosdpt-0].expr
 		}
 	case 51:
-		//line parse.y:303
+		//line parse.y:304
 		{
 			boosdVAL.exprs = append(boosdS[boosdpt-2].exprs, boosdS[boosdpt-0].expr)
 		}
 	case 52:
-		//line parse.y:309
+		//line parse.y:310
 		{
 			boosdVAL.expr = &TableExpr{Pairs: boosdS[boosdpt-1].exprs}
 		}
 	case 53:
-		//line parse.y:315
+		//line parse.y:316
 		{
 			boosdVAL.exprs = make([]Expr, 1, 16)
 			boosdVAL.exprs[0] = boosdS[boosdpt-0].expr
 		}
 	case 54:
-		//line parse.y:320
+		//line parse.y:321
 		{
 			boosdVAL.exprs = append(boosdS[boosdpt-2].exprs, boosdS[boosdpt-0].expr)
 		}
 	case 55:
-		//line parse.y:326
+		//line parse.y:327
 		{
 			boosdVAL.expr = &PairExpr{boosdS[boosdpt-3].expr, boosdS[boosdpt-1].expr}
 		}

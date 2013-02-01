@@ -62,7 +62,10 @@ func main() {
 	file := fset.AddFile(filename, fset.Base(), len(mdl))
 
 	// and parse
-	pkg := boosd.Parse(file, string(mdl))
+	pkg, err := boosd.Parse(file, string(mdl))
+	if err != nil {
+		log.Fatalf("Parse(%v): %s", file, err)
+	}
 	if pkg.NErrors > 0 {
 		log.Fatal("There were errors parsing the file")
 	}
