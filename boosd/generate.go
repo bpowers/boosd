@@ -254,24 +254,26 @@ func (g *generator) stmt(s Stmt) {
 	}
 }
 
-func (g *generator) model(m *ModelDecl) {
+func (g *generator) model(m *ModelDecl) error {
 	if m.Name.Name != "main" {
-		log.Printf("non-main model not supported: %v", m)
-		return
+		return fmt.Errorf("non-main model (%s) not supported", m.Name.Name)
 	}
 	for _, s := range m.Body.List {
 		g.stmt(s)
 	}
+	return nil
 }
 
-func (g *generator) file(f *File) []byte {
+func (g *generator) file(f *File) ([]byte, error) {
 	for _, d := range f.Decls {
 		md, ok := d.(*ModelDecl)
 		if !ok {
 			log.Printf("top level decl that isn't a model: %v (%T)", d, d)
 			continue
 		}
-		g.model(md)
+		if err := g.model(md); err != nil {
+			return nil, fmt.Errorf("g.model: %s", err)
+		}
 	}
 
 	var buf bytes.Buffer
@@ -283,7 +285,7 @@ func (g *generator) file(f *File) []byte {
 		panic(fmt.Sprintf("Execute(%v): %s", g, err))
 	}
 
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 func GenGo(f *File) (*ast.File, error) {
@@ -292,7 +294,11 @@ func GenGo(f *File) (*ast.File, error) {
 	g.Equations = []string{}
 	g.Stocks = []string{}
 	g.Initials = []string{}
-	code := g.file(f)
+
+	code, err := g.file(f)
+	if err != nil {
+		return nil, fmt.Errorf("g.file: %s", err)
+	}
 	log.Printf("c: %s", code)
 
 	fset := token.NewFileSet()
