@@ -14,32 +14,28 @@ import (
 	"log"
 	"strconv"
 	"text/template"
+	"unicode"
 )
 
-const modelTmpl = `
-package main
-
-import (
-	"github.com/bpowers/boosd/runtime"
-)
-
+const fileTmpl = `
+{{define "modelTmpl"}}
 var (
-	mdlMainName = "main"
-	mdlMainVars = map[string]runtime.Var{
+	mdl{{$.CamelName}}Name = "{{$.Name}}"
+	mdl{{$.CamelName}}Vars = map[string]runtime.Var{
 {{range $.Vars}}
 		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
 	}
 )
 
-type simMain struct {
+type sim{{$.CamelName}} struct {
 	runtime.BaseSim
 }
 
-type mdlMain struct {
+type mdl{{$.CamelName}} struct {
 	runtime.BaseModel
 }
 
-func simMainStep(s *runtime.BaseSim, dt float64) {
+func sim{{$.CamelName}}Step(s *runtime.BaseSim, dt float64) {
 {{range $.Equations}}
 	{{.}}
 {{end}}
@@ -48,7 +44,7 @@ func simMainStep(s *runtime.BaseSim, dt float64) {
 {{end}}
 }
 
-func (m *mdlMain) NewSim() runtime.Sim {
+func (m *mdl{{$.CamelName}}) NewSim() runtime.Sim {
 	ts := runtime.Timespec{
 		Start:    {{$.Time.Start}},
 		End:      {{$.Time.End}},
@@ -58,19 +54,28 @@ func (m *mdlMain) NewSim() runtime.Sim {
 	tables := map[string]runtime.Table{}
 	consts := runtime.Data{}
 
-	s := new(simMain)
+	s := new(sim{{$.CamelName}})
 	s.Init(m, ts, tables, consts)
-	s.Step = simMainStep
+	s.Step = sim{{$.CamelName}}Step
 
 {{range $.Initials}}
 	{{.}}
 {{end}}
 	s.Curr["time"] = ts.Start
 
-	runtime.RegisterSim("main", s)
+	runtime.RegisterSim(mdl{{$.CamelName}}Name, s)
 
 	return s
 }
+{{end}}
+
+package main
+
+import (
+	"github.com/bpowers/boosd/runtime"
+)
+
+{{range $.Models}}{{template "modelTmpl" .}}{{end}}
 
 func init() {
 	m := &mdlMain{
@@ -88,12 +93,19 @@ func main() {
 }
 `
 
-type generator struct {
+type genModel struct {
+	Name      string
+	CamelName string // camelcased
 	Vars      map[string]runtime.Var
 	Time      runtime.Timespec
 	Equations []string
 	Stocks    []string
 	Initials  []string
+}
+
+type generator struct {
+	Models map[string]*genModel
+	curr *genModel
 }
 
 func (g *generator) declList(list []Decl) {
@@ -149,13 +161,13 @@ func (g *generator) timespec(elts []Expr) {
 		}
 		switch k {
 		case "start":
-			g.Time.Start = v
+			g.curr.Time.Start = v
 		case "end":
-			g.Time.End = v
+			g.curr.Time.End = v
 		case "dt":
-			g.Time.DT = v
+			g.curr.Time.DT = v
 		case "save_step":
-			g.Time.SaveStep = v
+			g.curr.Time.SaveStep = v
 		default:
 			panic(fmt.Sprintf("timespec unknown key %s", k))
 		}
@@ -177,7 +189,7 @@ func (g *generator) initial(name string, expr Expr) {
 		panic(fmt.Sprintf("initial(%s): non-const %v", name, expr))
 	}
 	init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
-	g.Initials = append(g.Initials, init)
+	g.curr.Initials = append(g.curr.Initials, init)
 }
 
 func (g *generator) stock(name string, expr Expr) {
@@ -204,22 +216,22 @@ func (g *generator) stock(name string, expr Expr) {
 		}
 	}
 	eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"] + (%s %s)*dt`, name, name, in, out)
-	g.Stocks = append(g.Stocks, eqn)
+	g.curr.Stocks = append(g.curr.Stocks, eqn)
 }
 
 func (g *generator) expr(name string, expr Expr) {
-	if g.Vars[name].Type == runtime.TyAux {
+	if g.curr.Vars[name].Type == runtime.TyAux {
 		if isConst(expr) {
 			g.initial(name, expr)
 			eqn := fmt.Sprintf(`s.Next["%s"] = %s`, name, expr)
-			g.Stocks = append(g.Stocks, eqn)
+			g.curr.Stocks = append(g.curr.Stocks, eqn)
 		} else {
 			eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
-			g.Equations = append(g.Equations, eqn)
+			g.curr.Equations = append(g.curr.Equations, eqn)
 		}
 	} else {
 		eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
-		g.Equations = append(g.Equations, eqn)
+		g.curr.Equations = append(g.curr.Equations, eqn)
 	}
 }
 
@@ -237,7 +249,7 @@ func (g *generator) assign(s *AssignStmt) {
 	if err != nil {
 		panic(fmt.Sprintf("varFromDecl(%v): %s", s.Lhs, err))
 	}
-	g.Vars[v.Name] = v
+	g.curr.Vars[v.Name] = v
 	if v.Type == runtime.TyStock {
 		g.stock(v.Name, s.Rhs)
 	} else {
@@ -255,12 +267,22 @@ func (g *generator) stmt(s Stmt) {
 }
 
 func (g *generator) model(m *ModelDecl) error {
-	if m.Name.Name != "main" {
-		return fmt.Errorf("non-main model (%s) not supported", m.Name.Name)
+	name := m.Name.Name
+	camelName := fmt.Sprintf("%c%s", unicode.ToUpper(rune(name[0])), name[1:])
+	g.curr = &genModel{
+		Name: name,
+		CamelName: camelName,
+		Vars: map[string]runtime.Var{},
+		Equations: []string{},
+		Stocks: []string{},
+		Initials: []string{},
 	}
 	for _, s := range m.Body.List {
 		g.stmt(s)
 	}
+	g.Models[m.Name.Name] = g.curr
+	g.curr = nil
+
 	return nil
 }
 
@@ -278,7 +300,7 @@ func (g *generator) file(f *File) ([]byte, error) {
 
 	var buf bytes.Buffer
 	tmpl := template.New("model.go")
-	if _, err := tmpl.Parse(modelTmpl); err != nil {
+	if _, err := tmpl.Parse(fileTmpl); err != nil {
 		panic(fmt.Sprintf("Parse(modelTmpl): %s", err))
 	}
 	if err := tmpl.Execute(&buf, g); err != nil {
@@ -289,17 +311,15 @@ func (g *generator) file(f *File) ([]byte, error) {
 }
 
 func GenGo(f *File) (*ast.File, error) {
-	g := new(generator)
-	g.Vars = map[string]runtime.Var{}
-	g.Equations = []string{}
-	g.Stocks = []string{}
-	g.Initials = []string{}
+	g := &generator{
+		Models: map[string]*genModel{},
+	}
 
 	code, err := g.file(f)
 	if err != nil {
 		return nil, fmt.Errorf("g.file: %s", err)
 	}
-	log.Printf("c: %s", code)
+	//log.Printf("c: %s", code)
 
 	fset := token.NewFileSet()
 	goFile, err := parser.ParseFile(fset, "model.go", code, 0)
