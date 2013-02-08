@@ -3,10 +3,10 @@ import "kinds"
 Smooth model {
         variable
         delay
-        //initial
+        initial
         smooth stock = {
                 biflow: (variable - smooth)/delay
-                initial: 0 //initial
+                initial: initial
         }
 }
 

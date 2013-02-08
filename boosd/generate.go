@@ -98,6 +98,7 @@ type genModel struct {
 	Equations []string
 	Stocks    []string
 	Initials  []string
+	Abstract  bool
 }
 
 type generator struct {
@@ -288,10 +289,35 @@ func (g *generator) stmt(s Stmt) error {
 		if err := g.assign(ss); err != nil {
 			return err
 		}
+	case *DeclStmt:
 	default:
-		log.Printf("stmt(%T): unimplemented - %v", s, s)
+		log.Printf("stmt(%T): unimplemented - %T", s, s)
 	}
 	return nil
+}
+
+func (g *generator) vars(stmts ...Stmt) (err error) {
+	addVar := func(vd *VarDecl) error {
+		v, err := varFromDecl(vd)
+		if err != nil {
+			return fmt.Errorf("varFromDecl(%v): %s", vd, err)
+		}
+		g.curr.Vars[v.Name] = v
+		return nil
+	}
+	for _, s := range stmts {
+		switch ss := s.(type) {
+		case *AssignStmt:
+			err = addVar(ss.Lhs)
+		case *DeclStmt:
+			g.curr.Abstract = true
+			err = addVar(ss.Decl)
+		default:
+			err = fmt.Errorf("varFromDecl(%v): unknown ty %T",
+				s, ss)
+		}
+	}
+	return
 }
 
 func (g *generator) model(m *ModelDecl) error {
@@ -305,17 +331,7 @@ func (g *generator) model(m *ModelDecl) error {
 		Stocks: []string{},
 		Initials: []string{},
 	}
-	for _, s := range m.Body.List {
-		a, ok := s.(*AssignStmt)
-		if !ok {
-			continue
-		}
-		v, err := varFromDecl(a.Lhs)
-		if err != nil {
-			panic(fmt.Sprintf("varFromDecl(%v): %s", a.Lhs, err))
-		}
-		g.curr.Vars[v.Name] = v
-	}
+	g.vars(m.Body.List...)
 	for _, s := range m.Body.List {
 		if err := g.stmt(s); err != nil {
 			return err
