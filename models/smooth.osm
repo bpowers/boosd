@@ -1,0 +1,39 @@
+import "kinds"
+
+Smooth model {
+        variable
+        delay
+        //initial
+        smooth stock = {
+                biflow: (variable - smooth)/delay
+                initial: 0 //initial
+        }
+}
+
+main model {
+        //sim.integration = "euler"
+        timespec = {
+                start:     0  `years`
+                end:       50 `years`
+                dt:        .5 `months`
+                save_step: 1  `year`
+        }
+
+        initial_population = 1000
+
+        birth_rate = .07 `1/time`
+        average_lifespan = 20 `time`
+
+        migrations flow = 0
+        births flow     = population * birth_rate
+        deaths flow     = population / average_lifespan
+
+        population stock = {
+                biflow:  migrations
+                inflow:  births
+                outflow: deaths
+                initial: 1000//initial_population
+        }
+
+        //avg_population = Smooth(population, delay, initial_population)
+}

@@ -37,11 +37,9 @@ type mdl{{$.CamelName}} struct {
 
 func sim{{$.CamelName}}Step(s *runtime.BaseSim, dt float64) {
 {{range $.Equations}}
-	{{.}}
-{{end}}
+	{{.}}{{end}}
 {{range $.Stocks}}
-	{{.}}
-{{end}}
+	{{.}}{{end}}
 }
 
 func (m *mdl{{$.CamelName}}) NewSim() runtime.Sim {
@@ -57,10 +55,9 @@ func (m *mdl{{$.CamelName}}) NewSim() runtime.Sim {
 	s := new(sim{{$.CamelName}})
 	s.Init(m, ts, tables, consts)
 	s.Step = sim{{$.CamelName}}Step
-
 {{range $.Initials}}
-	{{.}}
-{{end}}
+	{{.}}{{end}}
+
 	s.Curr["time"] = ts.Start
 
 	runtime.RegisterSim(mdl{{$.CamelName}}Name, s)
@@ -183,16 +180,18 @@ func varFromDecl(d *VarDecl) (v runtime.Var, err error) {
 	return runtime.Var{d.Name.Name, runtime.TypeForName(d.Type.Name)}, nil
 }
 
-func (g *generator) initial(name string, expr Expr) {
+func (g *generator) initial(name string, expr Expr) (err error) {
 	val, err := constEval(expr)
-	if err != nil {
-		panic(fmt.Sprintf("initial(%s): non-const %v", name, expr))
+	if err == nil {
+		init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
+		g.curr.Initials = append(g.curr.Initials, init)
+	} else {
+		err = fmt.Errorf("initial(%s): non-const %v", name, expr)
 	}
-	init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
-	g.curr.Initials = append(g.curr.Initials, init)
+	return
 }
 
-func (g *generator) stock(name string, expr Expr) {
+func (g *generator) stock(name string, expr Expr) error {
 	cl, ok := expr.(*CompositeLit)
 	if !ok {
 		panic(fmt.Sprintf("stock is %T, not CompositeLit", expr))
@@ -205,11 +204,14 @@ func (g *generator) stock(name string, expr Expr) {
 		}
 		switch k {
 		case "initial":
-			g.initial(name, val)
+			if err := g.initial(name, val); err != nil {
+				return fmt.Errorf("initial(%s, %s): %s",
+					name, val, err)
+			}
 		case "biflow":
-			bi = fmt.Sprintf("%s", val)
+			bi = fmt.Sprintf("+%s", val)
 		case "inflow":
-			in = fmt.Sprintf("%s", val)
+			in = fmt.Sprintf("+%s", val)
 		case "outflow":
 			out = fmt.Sprintf("-(%s)", val)
 		default:
@@ -219,13 +221,14 @@ func (g *generator) stock(name string, expr Expr) {
 	}
 	eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"] + (%s %s %s)*dt`, name, name, bi, in, out)
 	g.curr.Stocks = append(g.curr.Stocks, eqn)
+	return nil
 }
 
 func (g *generator) expr(name string, expr Expr) {
 	if g.curr.Vars[name].Type == runtime.TyAux {
 		if isConst(expr) {
 			g.initial(name, expr)
-			eqn := fmt.Sprintf(`s.Next["%s"] = %s`, name, expr)
+			eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"]`, name, name)
 			g.curr.Stocks = append(g.curr.Stocks, eqn)
 		} else {
 			eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
@@ -237,15 +240,15 @@ func (g *generator) expr(name string, expr Expr) {
 	}
 }
 
-func (g *generator) assign(s *AssignStmt) {
+func (g *generator) assign(s *AssignStmt) error {
 	if s.Lhs.Name.Name == "timespec" {
 		c, ok := s.Rhs.(*CompositeLit)
 		if !ok {
-			panic(fmt.Sprintf("timespec is %T, not CompositeLit",
-				s.Rhs))
+			return fmt.Errorf("timespec is %T, not CompositeLit",
+				s.Rhs)
 		}
 		g.timespec(c.Elts)
-		return
+		return nil
 	}
 	v, err := varFromDecl(s.Lhs)
 	if err != nil {
@@ -253,19 +256,25 @@ func (g *generator) assign(s *AssignStmt) {
 	}
 	g.curr.Vars[v.Name] = v
 	if v.Type == runtime.TyStock {
-		g.stock(v.Name, s.Rhs)
+		if err := g.stock(v.Name, s.Rhs); err != nil {
+			return err
+		}
 	} else {
 		g.expr(v.Name, s.Rhs)
 	}
+	return nil
 }
 
-func (g *generator) stmt(s Stmt) {
+func (g *generator) stmt(s Stmt) error {
 	switch ss := s.(type) {
 	case *AssignStmt:
-		g.assign(ss)
+		if err := g.assign(ss); err != nil {
+			return err
+		}
 	default:
 		log.Printf("stmt(%T): unimplemented - %v", s, s)
 	}
+	return nil
 }
 
 func (g *generator) model(m *ModelDecl) error {
@@ -280,7 +289,9 @@ func (g *generator) model(m *ModelDecl) error {
 		Initials: []string{},
 	}
 	for _, s := range m.Body.List {
-		g.stmt(s)
+		if err := g.stmt(s); err != nil {
+			return err
+		}
 	}
 	g.Models[m.Name.Name] = g.curr
 	g.curr = nil
