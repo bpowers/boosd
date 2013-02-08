@@ -32,7 +32,7 @@ main model {
                 biflow:  migrations
                 inflow:  births
                 outflow: deaths
-                initial: 1000//initial_population
+                initial: initial_population
         }
 
         //avg_population = Smooth(population, delay, initial_population)

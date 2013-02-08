@@ -186,7 +186,25 @@ func (g *generator) initial(name string, expr Expr) (err error) {
 		init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
 		g.curr.Initials = append(g.curr.Initials, init)
 	} else {
-		err = fmt.Errorf("initial(%s): non-const %v", name, expr)
+		unitExpr, ok := expr.(*UnitExpr)
+		if !ok {
+			return fmt.Errorf("initial(%s): not unitexpr", name)
+		}
+		switch e := unitExpr.X.(type) {
+		case *RefExpr:
+			if _, ok := g.curr.Vars[e.Ident.Name]; ok {
+				init := fmt.Sprintf(`s.Curr["%s"] = s.Curr["%s"]`,
+					name, e.Name)
+				g.curr.Initials = append(g.curr.Initials, init)
+				err = nil
+			} else {
+				err = fmt.Errorf("initial(%s): non-const ident %v",
+					name, e.Name)
+			}
+		default:
+			err = fmt.Errorf("initial(%s): non-const %v (%T)",
+				name, unitExpr.X, unitExpr.X)
+		}
 	}
 	return
 }
@@ -250,11 +268,10 @@ func (g *generator) assign(s *AssignStmt) error {
 		g.timespec(c.Elts)
 		return nil
 	}
-	v, err := varFromDecl(s.Lhs)
-	if err != nil {
-		panic(fmt.Sprintf("varFromDecl(%v): %s", s.Lhs, err))
+	v, ok := g.curr.Vars[s.Lhs.Name.Name]
+	if !ok {
+		return fmt.Errorf("assign: unknown v '%s'?", s.Lhs.Name.Name)
 	}
-	g.curr.Vars[v.Name] = v
 	if v.Type == runtime.TyStock {
 		if err := g.stock(v.Name, s.Rhs); err != nil {
 			return err
@@ -287,6 +304,17 @@ func (g *generator) model(m *ModelDecl) error {
 		Equations: []string{},
 		Stocks: []string{},
 		Initials: []string{},
+	}
+	for _, s := range m.Body.List {
+		a, ok := s.(*AssignStmt)
+		if !ok {
+			continue
+		}
+		v, err := varFromDecl(a.Lhs)
+		if err != nil {
+			panic(fmt.Sprintf("varFromDecl(%v): %s", a.Lhs, err))
+		}
+		g.curr.Vars[v.Name] = v
 	}
 	for _, s := range m.Body.List {
 		if err := g.stmt(s); err != nil {
