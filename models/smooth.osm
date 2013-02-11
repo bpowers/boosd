@@ -35,5 +35,5 @@ main model {
                 initial: initial_population
         }
 
-        //avg_population = Smooth(population, delay, initial_population)
+        avg_population = Smooth(population, delay, initial_population)
 }

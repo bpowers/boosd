@@ -27,7 +27,7 @@ type Sim interface {
 
 type Model interface {
 	Name() string
-	NewSim() Sim
+	NewSim(iName string) Sim
 	Attr(name string) interface{}
 	VarNames() []string
 	VarInfo(name string) map[string]interface{}
@@ -54,7 +54,7 @@ func Main() {
 		log.Fatalf("no main model registered")
 	}
 
-	sim := m.NewSim()
+	sim := m.NewSim("main")
 
 	if err := sim.RunToEnd(); err != nil {
 		log.Fatalf("sim.RunToEnd: %s", err)
