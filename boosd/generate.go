@@ -42,7 +42,7 @@ func sim{{$.CamelName}}Step(s *runtime.BaseSim, dt float64) {
 	{{.}}{{end}}
 }
 
-func (m *mdl{{$.CamelName}}) NewSim() runtime.Sim {
+func (m *mdl{{$.CamelName}}) NewSim(name string) runtime.Sim {
 	ts := runtime.Timespec{
 		Start:    {{$.Time.Start}},
 		End:      {{$.Time.End}},
@@ -53,6 +53,7 @@ func (m *mdl{{$.CamelName}}) NewSim() runtime.Sim {
 	consts := runtime.Data{}
 
 	s := new(sim{{$.CamelName}})
+	s.InstanceName = name
 	s.Init(m, ts, tables, consts)
 	s.Step = sim{{$.CamelName}}Step
 {{range $.Initials}}
