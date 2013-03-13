@@ -1,7 +1,4 @@
 #!/bin/sh
 
-pushd parser
-make
-popd
-
+(cd boosd && make)
 go install
