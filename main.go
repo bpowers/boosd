@@ -5,16 +5,31 @@
 package main
 
 import (
-	"github.com/bpowers/boosd/boosd"
 	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
+	"github.com/bpowers/boosd/boosd"
+	"github.com/davecheney/gogo"
+	"github.com/davecheney/gogo/build"
 	"go/ast"
 	"go/format"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+)
+
+const usage = `Usage: %s [OPTION...]
+Compile system dynamics models.
+
+Options:
+`
+
+var (
+	outPath string
 )
 
 func gofmtFile(f *ast.File, goFset *token.FileSet) ([]byte, error) {
@@ -26,6 +41,13 @@ func gofmtFile(f *ast.File, goFset *token.FileSet) ([]byte, error) {
 }
 
 func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, usage, os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.StringVar(&outPath, "o", "model.out",
+		"file name to use as output")
+
 	flag.Parse()
 }
 
@@ -46,6 +68,7 @@ func main() {
 		if err != nil {
 			log.Fatal("Open:", err)
 		}
+		defer f.Close()
 		fi = bufio.NewReader(f)
 	}
 
@@ -53,10 +76,6 @@ func main() {
 	mdl, err := ioutil.ReadAll(fi)
 	if err != nil {
 		log.Fatal("ReadAll:", err)
-	}
-
-	if f != nil && f.Close() != nil {
-		log.Fatal("f.Close()")
 	}
 
 	file := fset.AddFile(filename, fset.Base(), len(mdl))
@@ -92,5 +111,83 @@ func main() {
 		log.Fatalf("gofmtFile(%v): %s", goFile, err)
 	}
 
-	os.Stdout.Write(src)
+	workDir, err := ioutil.TempDir("", "boost_temp")
+	if err != nil {
+		log.Fatalf("ioutil.TempDir('', 'boost_temp'): %s", err)
+	}
+
+	if err = os.Mkdir(path.Join(workDir, ".gogo"), os.ModeDir|0700); err != nil {
+		log.Fatalf("os.Mkdir(%s, mode|0700): %s", path.Join(workDir, ".gogo"), err)
+	}
+
+	if err = os.Mkdir(path.Join(workDir, "src"), os.ModeDir|0700); err != nil {
+		log.Fatalf("os.Mkdir(%s, mode|0700): %s", path.Join(workDir, "src"), err)
+	}
+
+	proj := path.Join(workDir, "src", path.Base(outPath))
+	if err = os.Mkdir(proj, os.ModeDir|0700); err != nil {
+		log.Fatalf("os.Mkdir(%s, mode|0700): %s", proj, err)
+	}
+
+	log.Printf("proj: %s", proj)
+
+	goProj, err := gogo.NewProject(workDir)
+	if err != nil {
+		log.Fatalf("NewProject(%s): %s", proj, err)
+	}
+
+	ctx, err := gogo.NewDefaultContext(goProj)
+	if err != nil {
+		log.Fatalf("NewDefaultContext: %s", err)
+	}
+	defer ctx.Destroy()
+
+	if err = os.Symlink("/var/unsecure/src/github.com", path.Join(workDir, "src", "github.com")); err != nil {
+		log.Fatalf("symlink: %s", err)
+	}
+
+	of, err := os.Create(path.Join(proj, "main.go"))
+	if err != nil {
+		log.Fatalf("Create: %s", err)
+	}
+	of.Write(src)
+	of.Close()
+
+	goPkg, err := ctx.ResolvePackage(path.Base(outPath))
+	if err != nil {
+		log.Fatalf("ResolvePackage: %s", err)
+	}
+
+	if err = build.Build(ctx, goPkg).Result(); err != nil {
+		log.Fatalf("Build: %s", err)
+	}
+
+	if err = copyFile(path.Join(workDir, "bin", "linux", "amd64", path.Base(outPath)), path.Base(outPath)); err != nil {
+		log.Fatalf("copyFile: %s", err)
+	}
+}
+
+func copyFile(from, to string) error {
+	fromF, err := os.Open(from)
+	if err != nil {
+		return fmt.Errorf("Open(%s): %s", from, err)
+	}
+	defer fromF.Close()
+
+	toF, err := os.OpenFile(to, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return fmt.Errorf("Open(%s): %s", to, err)
+	}
+	defer toF.Close()
+
+	_, err = io.Copy(toF, fromF)
+	return err
+}
+
+func mustGetwd() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return cwd
 }
