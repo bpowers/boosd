@@ -377,7 +377,7 @@ func GenGo(f *File) (*ast.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("g.file: %s", err)
 	}
-	log.Printf("c: %s", code)
+	//log.Printf("c: %s", code)
 
 	fset := token.NewFileSet()
 	goFile, err := parser.ParseFile(fset, "model.go", code, 0)
