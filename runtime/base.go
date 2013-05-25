@@ -193,7 +193,6 @@ func TypeForName(n string) VarType {
 	return ty
 }
 
-
 func (vm VarMap) InstanceMap(iName string) map[string]string {
 	mm := map[string]string{}
 	for k, _ := range vm {
