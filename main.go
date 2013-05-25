@@ -28,17 +28,14 @@ Compile system dynamics models.
 Options:
 `
 
+const (
+	// FIXME: this is $GOPATH/src/github.com - non-hardcode this
+	GithubDir = "/var/unsecure/src/github.com"
+)
+
 var (
 	outPath string
 )
-
-func gofmtFile(f *ast.File, goFset *token.FileSet) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := format.Node(&buf, goFset, f); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
 
 func init() {
 	flag.Usage = func() {
@@ -52,121 +49,41 @@ func init() {
 }
 
 func main() {
-	var fset, goFset *token.FileSet = token.NewFileSet(), token.NewFileSet()
 	var filename string
-	var fi *bufio.Reader
-	var f *os.File
+	var in *bufio.Reader
 	var err error
 
 	// use the file if there is an argument, otherwise use stdin
 	if flag.NArg() == 0 {
 		filename = "stdin"
-		fi = bufio.NewReader(os.NewFile(0, "stdin"))
+		in = bufio.NewReader(os.NewFile(0, "stdin"))
 	} else {
 		filename = flag.Arg(0)
-		f, err = os.Open(filename)
+		f, err := os.Open(filename)
 		if err != nil {
 			log.Fatal("Open:", err)
 		}
 		defer f.Close()
-		fi = bufio.NewReader(f)
+		in = bufio.NewReader(f)
 	}
 
-	// dump in the file
-	mdl, err := ioutil.ReadAll(fi)
+	goSource, err := transliterate(filename, in)
 	if err != nil {
-		log.Fatal("ReadAll:", err)
+		log.Fatalf("%s", err)
 	}
 
-	file := fset.AddFile(filename, fset.Base(), len(mdl))
-
-	// and parse
-	pkg, err := boosd.Parse(file, string(mdl))
+	exePath, err := compileAndLink(goSource)
 	if err != nil {
-		log.Fatalf("Parse(%v): %s", file, err)
-	}
-	if pkg.NErrors > 0 {
-		log.Fatal("There were errors parsing the file")
-	}
-	// log.Printf("compilationUnit: %#v\n", f)
-	boosd.PassScopeChain(pkg)
-
-	/*
-		mainMdl := pkg.GetModel("main")
-
-		if mainMdl == nil {
-			log.Fatal("No main model")
-		} else if mainMdl.Virtual {
-			log.Fatal("Main model can't have undefined variables")
-		}
-	*/
-
-	goFile, err := boosd.GenGo(pkg)
-	if err != nil {
-		log.Fatalf("generateGoAST(%v): %s", pkg, err)
+		log.Fatalf("compileAndLink('%s')", goSource, err)
 	}
 
-	src, err := gofmtFile(goFile, goFset)
-	if err != nil {
-		log.Fatalf("gofmtFile(%v): %s", goFile, err)
-	}
-
-	workDir, err := ioutil.TempDir("", "boost_temp")
-	if err != nil {
-		log.Fatalf("ioutil.TempDir('', 'boost_temp'): %s", err)
-	}
-
-	if err = os.Mkdir(path.Join(workDir, ".gogo"), os.ModeDir|0700); err != nil {
-		log.Fatalf("os.Mkdir(%s, mode|0700): %s", path.Join(workDir, ".gogo"), err)
-	}
-
-	if err = os.Mkdir(path.Join(workDir, "src"), os.ModeDir|0700); err != nil {
-		log.Fatalf("os.Mkdir(%s, mode|0700): %s", path.Join(workDir, "src"), err)
-	}
-
-	proj := path.Join(workDir, "src", path.Base(outPath))
-	if err = os.Mkdir(proj, os.ModeDir|0700); err != nil {
-		log.Fatalf("os.Mkdir(%s, mode|0700): %s", proj, err)
-	}
-
-	log.Printf("proj: %s", proj)
-
-	goProj, err := gogo.NewProject(workDir)
-	if err != nil {
-		log.Fatalf("NewProject(%s): %s", proj, err)
-	}
-
-	ctx, err := gogo.NewDefaultContext(goProj)
-	if err != nil {
-		log.Fatalf("NewDefaultContext: %s", err)
-	}
-	defer ctx.Destroy()
-
-	if err = os.Symlink("/var/unsecure/src/github.com", path.Join(workDir, "src", "github.com")); err != nil {
-		log.Fatalf("symlink: %s", err)
-	}
-
-	of, err := os.Create(path.Join(proj, "main.go"))
-	if err != nil {
-		log.Fatalf("Create: %s", err)
-	}
-	of.Write(src)
-	of.Close()
-
-	goPkg, err := ctx.ResolvePackage(path.Base(outPath))
-	if err != nil {
-		log.Fatalf("ResolvePackage: %s", err)
-	}
-
-	if err = build.Build(ctx, goPkg).Result(); err != nil {
-		log.Fatalf("Build: %s", err)
-	}
-
-	if err = copyFile(path.Join(workDir, "bin", "linux", "amd64", path.Base(outPath)), path.Base(outPath)); err != nil {
-		log.Fatalf("copyFile: %s", err)
+	if err = copyFile(exePath, outPath); err != nil {
+		log.Fatalf("copyFile('%s', '%s'): %s", exePath, outPath, err)
 	}
 }
 
+// copyFile copies the file at path 'from' to path 'to', overwriting
+// the file at 'to' if it already exists.
 func copyFile(from, to string) error {
 	fromF, err := os.Open(from)
 	if err != nil {
@@ -184,10 +101,125 @@ func copyFile(from, to string) error {
 	return err
 }
 
+// mustGetwd returns the current working directory, panicing on error.
 func mustGetwd() string {
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 	return cwd
+}
+
+// gofmt takes the given, valid, Go AST and returns a
+// canonically-formatted go program in a byte-array, or an error.
+func gofmt(f *ast.File) ([]byte, error) {
+	fset := token.NewFileSet()
+	var buf bytes.Buffer
+	if err := format.Node(&buf, fset, f); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// transliterate takes an input stream and a name and returns a byte
+// buffer containing valid & gofmt'ed source code, or an error.  The
+// name is used purely for diagnostic purposes
+func transliterate(name string, in io.Reader) ([]byte, error) {
+	fset := token.NewFileSet()
+
+	// dump in the file
+	mdlSrc, err := ioutil.ReadAll(in)
+	if err != nil {
+		return nil, fmt.Errorf("ReadAll(%v): %s", in, err)
+	}
+
+	fsetFile := fset.AddFile(name, fset.Base(), len(mdlSrc))
+
+	// and parse
+	pkg, err := boosd.Parse(fsetFile, string(mdlSrc))
+	if err != nil {
+		return nil, fmt.Errorf("Parse(%v): %s", name, err)
+	}
+	if pkg.NErrors > 0 {
+		return nil, fmt.Errorf("There were errors parsing the file")
+	}
+
+	goSource, err := boosd.GenGo(pkg)
+	if err != nil {
+		log.Fatalf("GenGo(%v): %s", pkg, err)
+	}
+
+	src, err := gofmt(goSource)
+	if err != nil {
+		log.Fatalf("gofmtFile(%v): %s", goSource, err)
+	}
+	return src, nil
+}
+
+// mkdir joins the components into a path and creates that path with
+// the given octal permissions.  Parent directories must already
+// exist.
+func mkdir(perm os.FileMode, components ...string) error {
+	p := path.Join(components...)
+	if err := os.Mkdir(p, perm); err != nil {
+		return fmt.Errorf("os.Mkdir(%s, %d): %s", p, perm, err)
+	}
+	return nil
+}
+
+// compileAndLink compiles and links the given source, returning a
+// path to the given binary, or an error.
+func compileAndLink(src []byte) (string, error) {
+	workDir, err := ioutil.TempDir("", "boost_temp")
+	if err != nil {
+		return "", fmt.Errorf("ioutil.TempDir: %s", err)
+	}
+
+	if err = mkdir(0700, workDir, ".gogo"); err != nil {
+		return "", err
+	}
+
+	if err = mkdir(0700, workDir, "src"); err != nil {
+		return "", err
+	}
+
+	if err = mkdir(0700, workDir, "src", "model.out"); err != nil {
+		return "", err
+	}
+
+	proj, err := gogo.NewProject(workDir)
+	if err != nil {
+		return "", fmt.Errorf("NewProject(%s): %s", workDir, err)
+	}
+
+	ctx, err := gogo.NewDefaultContext(proj)
+	if err != nil {
+		return "", fmt.Errorf("NewDefaultContext(): %s", err)
+	}
+	defer ctx.Destroy()
+
+	if err = os.Symlink(GithubDir, path.Join(workDir, "src", "github.com")); err != nil {
+		return "", fmt.Errorf("symlink: %s", err)
+	}
+
+	srcPath := path.Join(workDir, "src", "model.out", "main.go")
+	f, err := os.Create(srcPath)
+	if err != nil {
+		return "", fmt.Errorf("Create(%s): %s", srcPath, err)
+	}
+	f.Write(src)
+	// this Close is not deferred so that we're sure the contents are flushed to
+	// the kernel before buid.Build is called.
+	f.Close()
+
+	goPkg, err := ctx.ResolvePackage("model.out")
+	if err != nil {
+		return "", fmt.Errorf("ResolvePackage(model.out): %s", err)
+	}
+
+	if err = build.Build(ctx, goPkg).Result(); err != nil {
+		return "", fmt.Errorf("Build: %s", err)
+	}
+
+	return path.Join(workDir, "bin", "linux", "amd64", "model.out"), nil
 }
