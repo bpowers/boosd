@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // this is work on figuring out what we need to codegen
-
 package main
 
 import (
@@ -13,6 +12,7 @@ import (
 var (
 	mdlMainName = "main"
 	mdlMainVars = map[string]runtime.Var{
+
 		"accum": runtime.Var{"accum", runtime.TyStock},
 		"in":    runtime.Var{"in", runtime.TyFlow},
 		"rate":  runtime.Var{"rate", runtime.TyAux},
@@ -28,34 +28,34 @@ type mdlMain struct {
 }
 
 func simMainStep(s *runtime.BaseSim, dt float64) {
-	s.Curr["in"] = s.Curr["rate"] * s.Curr["accum"]
+
+	s.Curr["in"] = ((s.Curr["rate"]) * (s.Curr["accum"]))
 
 	s.Next["rate"] = s.Curr["rate"]
-	s.Next["accum"] = s.Curr["accum"] + s.Curr["in"]*dt
+	s.Next["accum"] = s.Curr["accum"] + (+s.Curr["in"])*dt
 }
 
-func (m *mdlMain) NewSim() runtime.Sim {
+func (m *mdlMain) NewSim(name string) runtime.Sim {
 	ts := runtime.Timespec{
 		Start:    0,
 		End:      50,
-		DT:       .5,
+		DT:       0.1,
 		SaveStep: 1,
 	}
 	tables := map[string]runtime.Table{}
 	consts := runtime.Data{}
 
 	s := new(simMain)
+	s.InstanceName = name
 	s.Init(m, ts, tables, consts)
 	s.Step = simMainStep
 
-	// Initialize any constant expressions, stock initials, or
-	// variables
+	s.Curr["rate"] = 0.070000
+	s.Curr["accum"] = 200.000000
 
-	s.Curr["accum"] = 200
-	s.Curr["rate"] = .07
 	s.Curr["time"] = ts.Start
 
-	runtime.RegisterSim("main", s)
+	runtime.RegisterSim(mdlMainName, s)
 
 	return s
 }
