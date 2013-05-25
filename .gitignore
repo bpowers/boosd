@@ -4,4 +4,5 @@ y.output
 *.a
 *.[568vq]
 [568vq].out
-model-test/model-test
+/model-test/model-test
+/model.out
