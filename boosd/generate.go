@@ -104,7 +104,7 @@ type genModel struct {
 
 type generator struct {
 	Models map[string]*genModel
-	curr *genModel
+	curr   *genModel
 }
 
 func (g *generator) declList(list []Decl) {
@@ -303,7 +303,9 @@ func (g *generator) vars(stmts ...Stmt) (err error) {
 		if err != nil {
 			return fmt.Errorf("varFromDecl(%v): %s", vd, err)
 		}
-		g.curr.Vars[v.Name] = v
+		if v.Name != "timespec" {
+			g.curr.Vars[v.Name] = v
+		}
 		return nil
 	}
 	for _, s := range stmts {
@@ -325,12 +327,12 @@ func (g *generator) model(m *ModelDecl) error {
 	name := m.Name.Name
 	camelName := fmt.Sprintf("%c%s", unicode.ToUpper(rune(name[0])), name[1:])
 	g.curr = &genModel{
-		Name: name,
+		Name:      name,
 		CamelName: camelName,
-		Vars: map[string]runtime.Var{},
+		Vars:      map[string]runtime.Var{},
 		Equations: []string{},
-		Stocks: []string{},
-		Initials: []string{},
+		Stocks:    []string{},
+		Initials:  []string{},
 	}
 	g.vars(m.Body.List...)
 	for _, s := range m.Body.List {
@@ -377,7 +379,7 @@ func GenGo(f *File) (*ast.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("g.file: %s", err)
 	}
-	//log.Printf("c: %s", code)
+	log.Printf("c: %s", code)
 
 	fset := token.NewFileSet()
 	goFile, err := parser.ParseFile(fset, "model.go", code, 0)

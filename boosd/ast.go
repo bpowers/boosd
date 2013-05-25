@@ -364,10 +364,12 @@ func (i Ident) String() string {
 func (x *BinaryExpr) String() string {
 	return fmt.Sprintf("((%s) %s (%s))", x.X, x.Op, x.Y)
 }
+
 // FIXME: this isn't correct
 func (x *UnitExpr) String() string {
 	return fmt.Sprintf("%s", x.X)
 }
+
 // ----------------------------------------------------------------------------
 // Convenience functions for Idents
 
