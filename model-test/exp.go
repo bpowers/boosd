@@ -17,7 +17,7 @@ var (
 		"rate":  runtime.Var{"rate", runtime.TyAux},
 	}
 	mdlMainDefaults = runtime.DefaultMap{
-		"rate": .07,
+		"rate":  .07,
 		"accum": 200,
 	}
 )

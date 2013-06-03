@@ -13,10 +13,10 @@ import (
 var models = map[string]Model{}
 var sims = map[string]Sim{}
 
-type chanReq struct{
-	sim     Sim
-	name    string
-	result  chan<- float64
+type chanReq struct {
+	sim    Sim
+	name   string
+	result chan<- float64
 }
 
 // a coordinator is the syncronization point between model instances
@@ -42,7 +42,7 @@ outer:
 func (c *Coordinator) Data(s Sim, name string) float64 {
 	result := make(chan float64)
 	c.req <- chanReq{s, name, result}
-	return <- result
+	return <-result
 }
 
 func (c *Coordinator) Close() {
