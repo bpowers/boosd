@@ -13,6 +13,50 @@ import (
 var models = map[string]Model{}
 var sims = map[string]Sim{}
 
+type chanReq struct{
+	sim     Sim
+	name    string
+	result  chan<- float64
+}
+
+// a coordinator is the syncronization point between model instances
+// and provider of gaming variables.
+type Coordinator struct {
+	req  chan chanReq
+	stop chan struct{}
+}
+
+func (c *Coordinator) worker() {
+outer:
+	for {
+		select {
+		case req := <-c.req:
+			val, _ := req.sim.Model().Default(req.name)
+			req.result <- val
+		case <-c.stop:
+			break outer
+		}
+	}
+}
+
+func (c *Coordinator) Data(s Sim, name string) float64 {
+	result := make(chan float64)
+	c.req <- chanReq{s, name, result}
+	return <- result
+}
+
+func (c *Coordinator) Close() {
+	close(c.stop)
+}
+
+func NewCoordinator() Coordinator {
+	c := Coordinator{
+		req: make(chan chanReq),
+	}
+	go c.worker()
+	return c
+}
+
 type Sim interface {
 	Model() Model
 
@@ -31,6 +75,7 @@ type Model interface {
 	Attr(name string) interface{}
 	VarNames() []string
 	VarInfo(name string) map[string]interface{}
+	Default(name string) (float64, bool)
 }
 
 func RegisterModel(ms ...Model) {

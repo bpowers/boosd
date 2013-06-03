@@ -11,11 +11,14 @@ import (
 
 var (
 	mdlMainName = "main"
-	mdlMainVars = map[string]runtime.Var{
-
+	mdlMainVars = runtime.VarMap{
 		"accum": runtime.Var{"accum", runtime.TyStock},
 		"in":    runtime.Var{"in", runtime.TyFlow},
 		"rate":  runtime.Var{"rate", runtime.TyAux},
+	}
+	mdlMainDefaults = runtime.DefaultMap{
+		"rate": .07,
+		"accum": 200,
 	}
 )
 
@@ -27,11 +30,20 @@ type mdlMain struct {
 	runtime.BaseModel
 }
 
-func simMainStep(s *runtime.BaseSim, dt float64) {
+func (s *simMain) calcInitial(c runtime.Coordinator, dt float64) {
+	s.Curr["rate"] = .07
+	s.Curr["accum"] = 200
+}
 
-	s.Curr["in"] = ((s.Curr["rate"]) * (s.Curr["accum"]))
+func (s *simMain) calcFlows(c runtime.Coordinator, dt float64) {
 
-	s.Next["rate"] = s.Curr["rate"]
+	rate := c.Data(s, "rate")
+	s.Curr["rate"] = rate
+	s.Curr["in"] = ((rate) * (s.Curr["accum"]))
+}
+
+func (s *simMain) calcStocks(c runtime.Coordinator, dt float64) {
+
 	s.Next["accum"] = s.Curr["accum"] + (+s.Curr["in"])*dt
 }
 
@@ -48,10 +60,10 @@ func (m *mdlMain) NewSim(name string) runtime.Sim {
 	s := new(simMain)
 	s.InstanceName = name
 	s.Init(m, ts, tables, consts)
-	s.Step = simMainStep
 
-	s.Curr["rate"] = 0.070000
-	s.Curr["accum"] = 200.000000
+	s.CalcInitial = s.calcInitial
+	s.CalcFlows = s.calcFlows
+	s.CalcStocks = s.calcStocks
 
 	s.Curr["time"] = ts.Start
 
@@ -63,8 +75,9 @@ func (m *mdlMain) NewSim(name string) runtime.Sim {
 func init() {
 	m := &mdlMain{
 		runtime.BaseModel{
-			MName: mdlMainName,
-			Vars:  mdlMainVars,
+			MName:    mdlMainName,
+			Vars:     mdlMainVars,
+			Defaults: mdlMainDefaults,
 		},
 	}
 

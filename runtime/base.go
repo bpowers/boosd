@@ -20,6 +20,7 @@ type Table [2][]float64
 type Data map[string]float64
 type ModelMap map[string]map[string]string
 type VarMap map[string]Var
+type DefaultMap map[string]float64
 
 type BaseSim struct {
 	Parent Model
@@ -42,7 +43,9 @@ type BaseSim struct {
 	stepNum   int64
 
 	// Calc{Flows,Stocks} are used by the RunTo* functions
-	Step func(s *BaseSim, dt float64)
+	CalcInitial func(c Coordinator, dt float64)
+	CalcFlows   func(c Coordinator, dt float64)
+	CalcStocks  func(c Coordinator, dt float64)
 }
 
 func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Data) {
@@ -74,8 +77,15 @@ func (s *BaseSim) Model() Model {
 
 // RunTo currently implements the Euler method
 func (s *BaseSim) RunTo(t float64) error {
+	c := NewCoordinator()
+
+	if s.Curr["time"] == s.Time.Start {
+		s.CalcInitial(c, s.Time.DT)
+	}
+
 	for s.Curr["time"] <= t {
-		s.Step(s, s.Time.DT)
+		s.CalcFlows(c, s.Time.DT)
+		s.CalcStocks(c, s.Time.DT)
 
 		if s.stepNum%s.saveEvery == 0 {
 			s.timeSeries = append(s.timeSeries, s.Curr["time"])
@@ -121,8 +131,14 @@ func (s *BaseSim) step() {
 }
 
 type BaseModel struct {
-	MName string
-	Vars  map[string]Var
+	MName    string
+	Vars     VarMap
+	Defaults DefaultMap
+}
+
+func (m *BaseModel) Default(name string) (v float64, ok bool) {
+	v, ok = m.Defaults[name]
+	return
 }
 
 func (m *BaseModel) Name() string {
