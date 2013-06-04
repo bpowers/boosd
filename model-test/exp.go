@@ -10,15 +10,19 @@ import (
 )
 
 var (
-	mdlMainName = "main"
-	mdlMainVars = runtime.VarMap{
-		"accum": runtime.Var{"accum", runtime.TyStock},
-		"in":    runtime.Var{"in", runtime.TyFlow},
-		"rate":  runtime.Var{"rate", runtime.TyAux},
-	}
-	mdlMainDefaults = runtime.DefaultMap{
-		"rate":  .07,
-		"accum": 200,
+	mMain = mdlMain{
+		runtime.BaseModel{
+			MName: "main",
+			Vars: runtime.VarMap{
+				"accum": runtime.Var{"accum", runtime.TyStock},
+				"in":    runtime.Var{"in", runtime.TyFlow},
+				"rate":  runtime.Var{"rate", runtime.TyAux},
+			},
+			Defaults: runtime.DefaultMap{
+				"rate":  .07,
+				"accum": 200,
+			},
+		},
 	}
 )
 
@@ -67,21 +71,11 @@ func (m *mdlMain) NewSim(name string) runtime.Sim {
 
 	s.Curr["time"] = ts.Start
 
-	runtime.RegisterSim(mdlMainName, s)
-
 	return s
 }
 
 func init() {
-	m := &mdlMain{
-		runtime.BaseModel{
-			MName:    mdlMainName,
-			Vars:     mdlMainVars,
-			Defaults: mdlMainDefaults,
-		},
-	}
-
-	runtime.RegisterModel(m)
+	runtime.RegisterModel(&mMain)
 }
 
 func main() {

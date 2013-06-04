@@ -84,14 +84,6 @@ func RegisterModel(ms ...Model) {
 	}
 }
 
-func RegisterSim(name string, s Sim) {
-	if existing, ok := sims[name]; ok {
-		panic(fmt.Sprintf("sim %s already registered (%#v)",
-			name, existing))
-	}
-	sims[name] = s
-}
-
 // Init initializes the boosd runtime.
 func Main() {
 	m, ok := models["main"]
@@ -113,16 +105,14 @@ func Main() {
 	series := map[string][]float64{}
 	orderedVars := sort.StringSlice{}
 
-	for simName, s := range sims {
-		for _, v := range s.Model().VarNames() {
-			qualName := fmt.Sprintf("%s.%s", simName, v)
-			data, err := s.ValueSeries(v)
-			if err != nil {
-				log.Fatalf("s.ValueSeries(%s): %s", v, err)
-			}
-			series[qualName] = data[1]
-			orderedVars = append(orderedVars, qualName)
+	for _, v := range sim.Model().VarNames() {
+		qualName := fmt.Sprintf("%s.%s", "main", v)
+		data, err := sim.ValueSeries(v)
+		if err != nil {
+			log.Fatalf("sim.ValueSeries(%s): %s", v, err)
 		}
+		series[qualName] = data[1]
+		orderedVars = append(orderedVars, qualName)
 	}
 
 	orderedVars.Sort()
