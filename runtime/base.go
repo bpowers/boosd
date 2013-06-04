@@ -69,6 +69,8 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Dat
 	for k, v := range s.Constants {
 		s.Curr[k] = v
 	}
+
+	s.Curr["time"] = ts.Start
 }
 
 func (s *BaseSim) Model() Model {
@@ -120,14 +122,6 @@ func (s *BaseSim) ValueSeries(name string) (r [2][]float64, err error) {
 
 func (s *BaseSim) SetValue(name string, val float64) error {
 	return nil
-}
-
-// Step is the internal function that does one round of whatever
-// integration method is in use.
-//
-// TODO: implement more than just euler.
-func (s *BaseSim) step() {
-
 }
 
 type BaseModel struct {

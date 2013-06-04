@@ -19,8 +19,8 @@ var (
 				"rate":  runtime.Var{"rate", runtime.TyAux},
 			},
 			Defaults: runtime.DefaultMap{
-				"rate":  .07,
-				"accum": 200,
+				"accum": 200.000000,
+				"rate":  0.070000,
 			},
 		},
 	}
@@ -35,19 +35,16 @@ type mdlMain struct {
 }
 
 func (s *simMain) calcInitial(c runtime.Coordinator, dt float64) {
-	s.Curr["rate"] = .07
-	s.Curr["accum"] = 200
+	s.Curr["accum"] = c.Data(s, "accum")
+	s.Curr["rate"] = c.Data(s, "rate")
 }
 
 func (s *simMain) calcFlows(c runtime.Coordinator, dt float64) {
-
-	rate := c.Data(s, "rate")
-	s.Curr["rate"] = rate
-	s.Curr["in"] = ((rate) * (s.Curr["accum"]))
+	s.Curr["rate"] = c.Data(s, "rate")
+	s.Curr["in"] = ((s.Curr["rate"]) * (s.Curr["accum"]))
 }
 
 func (s *simMain) calcStocks(c runtime.Coordinator, dt float64) {
-
 	s.Next["accum"] = s.Curr["accum"] + (+s.Curr["in"])*dt
 }
 
@@ -68,8 +65,6 @@ func (m *mdlMain) NewSim(name string) runtime.Sim {
 	s.CalcInitial = s.calcInitial
 	s.CalcFlows = s.calcFlows
 	s.CalcStocks = s.calcStocks
-
-	s.Curr["time"] = ts.Start
 
 	return s
 }

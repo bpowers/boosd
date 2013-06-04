@@ -20,10 +20,16 @@ import (
 const fileTmpl = `
 {{define "modelTmpl"}}
 var (
-	mdl{{$.CamelName}}Name = "{{$.Name}}"
-	mdl{{$.CamelName}}Vars = map[string]runtime.Var{
-{{range $.Vars}}
-		"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
+	m{{$.CamelName}} = mdl{{$.CamelName}}{
+		runtime.BaseModel{
+			MName: "{{$.Name}}",
+			Vars: runtime.VarMap{ {{range $.Vars}}
+				"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
+			},
+			Defaults: runtime.DefaultMap{ {{range $n, $_ := $.Initials}}
+				"{{$n}}": {{.}}, {{end}}
+			},
+		},
 	}
 )
 
@@ -35,10 +41,15 @@ type mdl{{$.CamelName}} struct {
 	runtime.BaseModel
 }
 
-func sim{{$.CamelName}}Step(s *runtime.BaseSim, dt float64) {
-{{range $.Equations}}
+func (s *sim{{$.CamelName}}) calcInitial(c runtime.Coordinator, dt float64) { {{range $n, $_ := $.Initials}}
+	s.Curr["{{$n}}"] = c.Data(s, "{{$n}}"){{end}}
+}
+
+func (s *sim{{$.CamelName}}) calcFlows(c runtime.Coordinator, dt float64) { {{range $.Equations}}
 	{{.}}{{end}}
-{{range $.Stocks}}
+}
+
+func (s *sim{{$.CamelName}}) calcStocks(c runtime.Coordinator, dt float64) { {{range $.Stocks}}
 	{{.}}{{end}}
 }
 
@@ -55,13 +66,10 @@ func (m *mdl{{$.CamelName}}) NewSim(name string) runtime.Sim {
 	s := new(sim{{$.CamelName}})
 	s.InstanceName = name
 	s.Init(m, ts, tables, consts)
-	s.Step = sim{{$.CamelName}}Step
-{{range $.Initials}}
-	{{.}}{{end}}
 
-	s.Curr["time"] = ts.Start
-
-	runtime.RegisterSim(mdl{{$.CamelName}}Name, s)
+	s.CalcInitial = s.calcInitial
+	s.CalcFlows = s.calcFlows
+	s.CalcStocks = s.calcStocks
 
 	return s
 }
@@ -75,19 +83,8 @@ import (
 
 {{range $.Models}}{{template "modelTmpl" .}}{{end}}
 
-func init() {
-	m := &mdlMain{
-		runtime.BaseModel{
-			MName: mdlMainName,
-			Vars:  mdlMainVars,
-		},
-	}
-
-	runtime.RegisterModel(m)
-}
-
 func main() {
-	runtime.Main()
+	runtime.Main(&mMain)
 }
 `
 
@@ -98,7 +95,7 @@ type genModel struct {
 	Time      runtime.Timespec
 	Equations []string
 	Stocks    []string
-	Initials  []string
+	Initials  map[string]string
 	Abstract  bool
 }
 
@@ -185,8 +182,8 @@ func varFromDecl(d *VarDecl) (v runtime.Var, err error) {
 func (g *generator) initial(name string, expr Expr) (err error) {
 	val, err := constEval(expr)
 	if err == nil {
-		init := fmt.Sprintf(`s.Curr["%s"] = %f`, name, val)
-		g.curr.Initials = append(g.curr.Initials, init)
+		init := fmt.Sprintf(`%f`, val)
+		g.curr.Initials[name] = init
 	} else {
 		unitExpr, ok := expr.(*UnitExpr)
 		if !ok {
@@ -195,9 +192,8 @@ func (g *generator) initial(name string, expr Expr) (err error) {
 		switch e := unitExpr.X.(type) {
 		case *RefExpr:
 			if _, ok := g.curr.Vars[e.Ident.Name]; ok {
-				init := fmt.Sprintf(`s.Curr["%s"] = s.Curr["%s"]`,
-					name, e.Name)
-				g.curr.Initials = append(g.curr.Initials, init)
+				init := fmt.Sprintf(`s.Curr["%s"]`, e.Name)
+				g.curr.Initials[name] = init
 				err = nil
 			} else {
 				err = fmt.Errorf("initial(%s): non-const ident %v",
@@ -245,19 +241,18 @@ func (g *generator) stock(name string, expr Expr) error {
 }
 
 func (g *generator) expr(name string, expr Expr) {
+	var eqn string
 	if g.curr.Vars[name].Type == runtime.TyAux {
 		if isConst(expr) {
 			g.initial(name, expr)
-			eqn := fmt.Sprintf(`s.Next["%s"] = s.Curr["%s"]`, name, name)
-			g.curr.Stocks = append(g.curr.Stocks, eqn)
+			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, name)
 		} else {
-			eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
-			g.curr.Equations = append(g.curr.Equations, eqn)
+			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
 	} else {
-		eqn := fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
-		g.curr.Equations = append(g.curr.Equations, eqn)
+		eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 	}
+	g.curr.Equations = append(g.curr.Equations, eqn)
 }
 
 func (g *generator) assign(s *AssignStmt) error {
@@ -332,7 +327,7 @@ func (g *generator) model(m *ModelDecl) error {
 		Vars:      map[string]runtime.Var{},
 		Equations: []string{},
 		Stocks:    []string{},
-		Initials:  []string{},
+		Initials:  map[string]string{},
 	}
 	g.vars(m.Body.List...)
 	for _, s := range m.Body.List {
