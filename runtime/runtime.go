@@ -10,9 +10,6 @@ import (
 	"sort"
 )
 
-var models = map[string]Model{}
-var sims = map[string]Sim{}
-
 type chanReq struct {
 	sim    Sim
 	name   string
@@ -78,19 +75,8 @@ type Model interface {
 	Default(name string) (float64, bool)
 }
 
-func RegisterModel(ms ...Model) {
-	for _, m := range ms {
-		models[m.Name()] = m
-	}
-}
-
 // Init initializes the boosd runtime.
-func Main() {
-	m, ok := models["main"]
-	if !ok {
-		log.Fatalf("no main model registered")
-	}
-
+func Main(m Model) {
 	sim := m.NewSim("main")
 
 	if err := sim.RunToEnd(); err != nil {

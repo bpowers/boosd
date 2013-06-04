@@ -74,10 +74,6 @@ func (m *mdlMain) NewSim(name string) runtime.Sim {
 	return s
 }
 
-func init() {
-	runtime.RegisterModel(&mMain)
-}
-
 func main() {
-	runtime.Main()
+	runtime.Main(&mMain)
 }
