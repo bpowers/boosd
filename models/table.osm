@@ -7,10 +7,8 @@ main model {
                 save_step: 1
         }
 
-        // 7% growth is a 10 year doubling time.
-        rate_table table = [(0, .14), (50, .07)]
-
-	rate = rate_table[time]
+        // This formulation is nonsensical, but shows the syntax
+        rate = [(0, .14), (25, .12), (50, .07)][time]
 
         in flow = rate * accum
 

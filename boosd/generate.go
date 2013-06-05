@@ -252,6 +252,13 @@ func (g *generator) table(name string, e Expr) error {
 	switch r := e.(type) {
 	case *TableExpr:
 		t = r
+	case *IndexExpr:
+		t, _ = r.X.(*TableExpr)
+
+		eqn := fmt.Sprintf(`s.Curr["%s"] = s.Tables["%s"].Lookup(%s)`,
+			name, name, r.Index)
+		g.curr.Equations = append(g.curr.Equations, eqn)
+
 	default:
 		return fmt.Errorf("table w/ non-table '%s': %#v", name, e)
 	}
@@ -294,7 +301,9 @@ func (g *generator) expr(name string, expr Expr) {
 	default:
 		eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 	}
-	g.curr.Equations = append(g.curr.Equations, eqn)
+	if len(eqn) > 0 {
+		g.curr.Equations = append(g.curr.Equations, eqn)
+	}
 }
 
 func (g *generator) assign(s *AssignStmt) error {
@@ -356,9 +365,15 @@ func resolveType(d *VarDecl, rhs Expr) error {
 		rhs = r.X
 	}
 
-	switch rhs.(type) {
+	switch r := rhs.(type) {
 	case *TableExpr:
 		d.Type = &identTable
+	case *IndexExpr:
+		if _, ok := r.X.(*TableExpr); ok {
+			d.Type = &identTable
+		} else {
+			d.Type = &identAux
+		}
 	default:
 		d.Type = &identAux
 	}
