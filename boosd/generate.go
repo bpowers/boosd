@@ -406,7 +406,7 @@ func (g *generator) model(m *ModelDecl) error {
 		Name:      name,
 		CamelName: camelName,
 		Vars:      map[string]runtime.Var{},
-		Tables:      map[string]runtime.Table{},
+		Tables:    map[string]runtime.Table{},
 		Equations: []string{},
 		Stocks:    []string{},
 		Initials:  map[string]string{},

@@ -8,7 +8,7 @@ main model {
         }
 
         // 7% growth is a 10 year doubling time.
-        rate_table = [(0, .14), (50, .07)]
+        rate_table table = [(0, .14), (50, .07)]
 
 	rate = rate_table[time]
 

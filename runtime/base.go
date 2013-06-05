@@ -54,7 +54,7 @@ func (t Table) Lookup(index float64) float64 {
 		return y[i]
 	}
 
-	slope := (y[i] - y[i-1])/(x[i] - x[i-1])
+	slope := (y[i] - y[i-1]) / (x[i] - x[i-1])
 	return (index-x[i-1])*slope + y[i-1]
 }
 
@@ -68,9 +68,9 @@ type BaseSim struct {
 
 	Series []Data
 
-	Tables    map[string]Table
-	Curr      Data
-	Next      Data
+	Tables map[string]Table
+	Curr   Data
+	Next   Data
 
 	timeSeries []float64
 

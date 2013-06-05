@@ -378,7 +378,6 @@ func (e *IndexExpr) String() string {
 	case *Ident:
 		i = ee.Name
 	default:
-		fmt.Printf("ident ty: %T %#v\n", e.Index, e.Index)
 		i = fmt.Sprintf("%s", e.Index)
 	}
 	return fmt.Sprintf(`s.Tables["%s"].Lookup(%s)`, name, i)
