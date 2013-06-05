@@ -71,6 +71,7 @@ type Model interface {
 	NewSim(iName string) Sim
 	Attr(name string) interface{}
 	VarNames() []string
+	Var(name string) (Var, bool)
 	VarInfo(name string) map[string]interface{}
 	Default(name string) (float64, bool)
 }
@@ -88,10 +89,19 @@ func Main(m Model) {
 		log.Fatalf("sim.ValueSeries(time): %s", err)
 	}
 	timeSeries := tsRaw[1]
+
 	series := map[string][]float64{}
 	orderedVars := sort.StringSlice{}
 
 	for _, v := range sim.Model().VarNames() {
+		vv, ok := sim.Model().Var(v)
+		if !ok {
+			log.Fatalf("sim.Model().Var(%s): not ok", v)
+		}
+		if vv.Type == TyTable {
+			continue
+		}
+
 		qualName := fmt.Sprintf("%s.%s", "main", v)
 		data, err := sim.ValueSeries(v)
 		if err != nil {

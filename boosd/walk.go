@@ -29,6 +29,12 @@ func walkExprList(v Visitor, list []Expr) {
 	}
 }
 
+func walkPairExprList(v Visitor, list []*PairExpr) {
+	for _, x := range list {
+		Walk(v, x)
+	}
+}
+
 func walkStmtList(v Visitor, list []Stmt) {
 	for _, x := range list {
 		Walk(v, x)
@@ -89,7 +95,7 @@ func Walk(v Visitor, node Node) {
 		}
 
 	case *TableExpr:
-		walkExprList(v, n.Pairs)
+		walkPairExprList(v, n.Pairs)
 
 	case *PairExpr:
 		Walk(v, n.X)

@@ -22,6 +22,42 @@ type ModelMap map[string]map[string]string
 type VarMap map[string]Var
 type DefaultMap map[string]float64
 
+func (t Table) Lookup(index float64) float64 {
+	size := len(t[0])
+	if size == 0 {
+		return 0
+	}
+
+	x := t[0]
+	y := t[1]
+
+	if index < x[0] {
+		return y[0]
+	} else if index > x[size-1] {
+		return y[size-1]
+	}
+
+	// binary search
+	low, mid, high := 0, 0, size
+	for low < high {
+		mid = low + (high-low)/2
+		if x[mid] < index {
+			low = mid + 1
+		} else {
+			high = mid
+		}
+	}
+
+	// at this point low == high, so use 'i' for readability
+	i := low
+	if x[i] == index {
+		return y[i]
+	}
+
+	slope := (y[i] - y[i-1])/(x[i] - x[i-1])
+	return (index-x[i-1])*slope + y[i-1]
+}
+
 type BaseSim struct {
 	Parent Model
 	Time   Timespec
@@ -35,7 +71,6 @@ type BaseSim struct {
 	Tables    map[string]Table
 	Curr      Data
 	Next      Data
-	Constants Data
 
 	timeSeries []float64
 
@@ -48,7 +83,7 @@ type BaseSim struct {
 	CalcStocks  func(c Coordinator, dt float64)
 }
 
-func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Data) {
+func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table) {
 	s.Parent = m
 	s.Time = ts
 
@@ -57,18 +92,12 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table, consts Dat
 	s.timeSeries = make([]float64, 0, capSeries)
 
 	s.Tables = tables
-	s.Constants = consts
 
 	// round to the nearest integer
 	s.saveEvery = int64(ts.SaveStep/ts.DT + .5)
 
 	s.Curr = Data{}
 	s.Next = Data{}
-
-	// initialize Curr with constants
-	for k, v := range s.Constants {
-		s.Curr[k] = v
-	}
 
 	s.Curr["time"] = ts.Start
 }
@@ -103,7 +132,7 @@ func (s *BaseSim) RunTo(t float64) error {
 }
 
 func (s *BaseSim) RunToEnd() error {
-	return s.RunTo(s.Time.End)
+	return s.RunTo(s.Time.End + .5*s.Time.DT)
 }
 
 func (s *BaseSim) Value(name string) (v float64, err error) {
@@ -128,6 +157,7 @@ type BaseModel struct {
 	MName    string
 	Vars     VarMap
 	Defaults DefaultMap
+	Tables   map[string]Table
 }
 
 func (m *BaseModel) Default(name string) (v float64, ok bool) {
@@ -141,6 +171,11 @@ func (m *BaseModel) Name() string {
 
 func (m *BaseModel) Attr(name string) interface{} {
 	return nil
+}
+
+func (m *BaseModel) Var(name string) (Var, bool) {
+	v, ok := m.Vars[name]
+	return v, ok
 }
 
 func (m *BaseModel) VarNames() []string {

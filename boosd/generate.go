@@ -29,6 +29,9 @@ var (
 			Defaults: runtime.DefaultMap{ {{range $n, $_ := $.Initials}}
 				"{{$n}}": {{.}}, {{end}}
 			},
+			Tables: map[string]runtime.Table{ {{range $n, $_ := $.Tables}}
+				"{{$n}}": {{printf "%#v" .}}, {{end}}
+			},
 		},
 	}
 )
@@ -60,12 +63,10 @@ func (m *mdl{{$.CamelName}}) NewSim(name string) runtime.Sim {
 		DT:       {{$.Time.DT}},
 		SaveStep: {{$.Time.SaveStep}},
 	}
-	tables := map[string]runtime.Table{}
-	consts := runtime.Data{}
 
 	s := new(sim{{$.CamelName}})
 	s.InstanceName = name
-	s.Init(m, ts, tables, consts)
+	s.Init(m, ts, m.Tables)
 
 	s.CalcInitial = s.calcInitial
 	s.CalcFlows = s.calcFlows
@@ -92,6 +93,7 @@ type genModel struct {
 	Name      string
 	CamelName string // camelcased
 	Vars      map[string]runtime.Var
+	Tables    map[string]runtime.Table
 	Time      runtime.Timespec
 	Equations []string
 	Stocks    []string
@@ -110,14 +112,15 @@ func (g *generator) declList(list []Decl) {
 // constEval returns the float64 value represented by Expr, or an
 // error if it can't be evaluated at compile time.
 func constEval(e Expr) (v float64, err error) {
-	val, ok := e.(*UnitExpr)
-	if !ok {
-		err = fmt.Errorf("timespec val %T not UnitExpr", e)
-		return
+	// if we're wrapped in units, remove them.  Unit safety is a
+	// separate issue.
+	switch r := e.(type) {
+	case *UnitExpr:
+		e = r.X
 	}
-	basic, ok := val.X.(*BasicLit)
+	basic, ok := e.(*BasicLit)
 	if !ok {
-		err = fmt.Errorf("timespec val %T not BasicLit", val.X)
+		err = fmt.Errorf("val %T not BasicLit", e)
 		return
 	}
 	return strconv.ParseFloat(basic.Value, 64)
@@ -170,12 +173,8 @@ func (g *generator) timespec(elts []Expr) {
 	}
 }
 
-var identAux = &Ident{Name: "aux"}
-
 func varFromDecl(d *VarDecl) (v runtime.Var, err error) {
-	if d.Type == nil {
-		d.Type = identAux
-	}
+	//log.Printf("var '%s': %s - %s", d.Name.Name, d.Type.Name, runtime.TypeForName(d.Type.Name))
 	return runtime.Var{d.Name.Name, runtime.TypeForName(d.Type.Name)}, nil
 }
 
@@ -240,16 +239,59 @@ func (g *generator) stock(name string, expr Expr) error {
 	return nil
 }
 
+func (g *generator) table(name string, e Expr) error {
+	var t *TableExpr
+
+	// if we're wrapped in units, remove them.  Unit safety is a
+	// separate issue.
+	switch r := e.(type) {
+	case *UnitExpr:
+		e = r.X
+	}
+
+	switch r := e.(type) {
+	case *TableExpr:
+		t = r
+	default:
+		return fmt.Errorf("table w/ non-table '%s': %#v", name, e)
+	}
+
+	l := len(t.Pairs)
+	tab := [2][]float64{make([]float64, l), make([]float64, l)}
+
+	for i, p := range t.Pairs {
+		x, err := constEval(p.X)
+		if err != nil {
+			return fmt.Errorf("pair %d X (%s): %s", i, p.X, err)
+		}
+		y, err := constEval(p.Y)
+		if err != nil {
+			return fmt.Errorf("pair %d Y (%s): %s", i, p.Y, err)
+		}
+		tab[0][i] = x
+		tab[1][i] = y
+	}
+
+	g.curr.Tables[name] = tab
+
+	return nil
+}
+
 func (g *generator) expr(name string, expr Expr) {
 	var eqn string
-	if g.curr.Vars[name].Type == runtime.TyAux {
+	switch g.curr.Vars[name].Type {
+	case runtime.TyAux:
 		if isConst(expr) {
 			g.initial(name, expr)
 			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, name)
 		} else {
 			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
-	} else {
+	case runtime.TyTable:
+		if err := g.table(name, expr); err != nil {
+			log.Printf("table(%s): %s", name, err)
+		}
+	default:
 		eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 	}
 	g.curr.Equations = append(g.curr.Equations, eqn)
@@ -292,6 +334,38 @@ func (g *generator) stmt(s Stmt) error {
 	return nil
 }
 
+var (
+	identAux   = Ident{Name: "aux"}
+	identTable = Ident{Name: "table"}
+)
+
+// resolveType has two uses - if a decl was given an explicit type, it
+// verifies this matches the type of the rhs expression.  If a decl
+// doesn't have an explicit type, it figures out the implicit type
+// from rhs.
+func resolveType(d *VarDecl, rhs Expr) error {
+	if d.Type != nil {
+		// TODO: verify type matches rhs
+		return nil
+	}
+
+	// if we're wrapped in units, remove them.  Unit safety is a
+	// separate issue.
+	switch r := rhs.(type) {
+	case *UnitExpr:
+		rhs = r.X
+	}
+
+	switch rhs.(type) {
+	case *TableExpr:
+		d.Type = &identTable
+	default:
+		d.Type = &identAux
+	}
+
+	return nil
+}
+
 func (g *generator) vars(stmts ...Stmt) (err error) {
 	addVar := func(vd *VarDecl) error {
 		v, err := varFromDecl(vd)
@@ -303,16 +377,23 @@ func (g *generator) vars(stmts ...Stmt) (err error) {
 		}
 		return nil
 	}
-	for _, s := range stmts {
+outer:
+	for i, s := range stmts {
 		switch ss := s.(type) {
 		case *AssignStmt:
+			if err = resolveType(ss.Lhs, ss.Rhs); err != nil {
+				break outer
+			}
 			err = addVar(ss.Lhs)
 		case *DeclStmt:
 			g.curr.Abstract = true
 			err = addVar(ss.Decl)
 		default:
-			err = fmt.Errorf("varFromDecl(%v): unknown ty %T",
-				s, ss)
+			err = fmt.Errorf("stmt %d (%v): unknown ty %T",
+				i, s, ss)
+		}
+		if err != nil {
+			break
 		}
 	}
 	return
@@ -325,6 +406,7 @@ func (g *generator) model(m *ModelDecl) error {
 		Name:      name,
 		CamelName: camelName,
 		Vars:      map[string]runtime.Var{},
+		Tables:      map[string]runtime.Table{},
 		Equations: []string{},
 		Stocks:    []string{},
 		Initials:  map[string]string{},

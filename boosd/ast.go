@@ -269,7 +269,7 @@ type (
 	// A CallExpr node represents an expression followed by an argument list.
 	TableExpr struct {
 		Lbrack token.Pos
-		Pairs  []Expr // function arguments; or nil
+		Pairs  []*PairExpr // function arguments; or nil
 		Rbrack token.Pos
 	}
 )
@@ -361,8 +361,27 @@ func (bl *BasicLit) String() string {
 func (i Ident) String() string {
 	return fmt.Sprintf(`s.Curr["%s"]`, i.Name)
 }
+
 func (x *BinaryExpr) String() string {
 	return fmt.Sprintf("((%s) %s (%s))", x.X, x.Op, x.Y)
+}
+
+func (e *IndexExpr) String() string {
+	name, i := "", ""
+	switch ee := e.X.(type) {
+	case *Ident:
+		name = ee.Name
+	default:
+		name = fmt.Sprintf("%s", e.X)
+	}
+	switch ee := e.Index.(type) {
+	case *Ident:
+		i = ee.Name
+	default:
+		fmt.Printf("ident ty: %T %#v\n", e.Index, e.Index)
+		i = fmt.Sprintf("%s", e.Index)
+	}
+	return fmt.Sprintf(`s.Tables["%s"].Lookup(%s)`, name, i)
 }
 
 // FIXME: this isn't correct

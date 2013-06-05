@@ -24,6 +24,7 @@ import (
 	str    string
 	lit    *BasicLit
 	exprs  []Expr
+	pexprs []*PairExpr
 	expr   Expr
 	stmt   Stmt
 	tlDecl Decl
@@ -43,7 +44,8 @@ import (
 %type <block>  stmts
 %type <stmt>   stmt
 %type <expr>   expr number pair table expr_w_unit opt_kind initializer assignment ref
-%type <exprs>  pairs expr_list initializers
+%type <exprs>  expr_list initializers
+%type <pexprs> pairs
 %type <decl>   var_decl
 %type <tlDecl> def
 %type <decls>  defs
@@ -314,12 +316,20 @@ table:	'[' pairs ']'
 
 pairs:	pair
 	{
-		$$ = make([]Expr, 1, 16)
-		$$[0] = $1
+		$$ = make([]*PairExpr, 1, 8)
+		pe, ok:= $1.(*PairExpr)
+		if !ok {
+			panic(fmt.Sprintf("not PairExpr 1: %#v", $1))
+		}
+		$$[0] = pe
 	}
 |	pairs ',' pair
 	{
-		$$ = append($1, $3)
+		pe, ok:= $3.(*PairExpr)
+		if !ok {
+			panic(fmt.Sprintf("not PairExpr 1: %#v", $3))
+		}
+		$$ = append($1, pe)
 	}
 ;
 

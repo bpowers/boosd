@@ -1,5 +1,3 @@
-package runtime
-
 // pseudo-kinds
 kind time
 kind distance

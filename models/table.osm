@@ -1,0 +1,21 @@
+// exponential growth
+main model {
+        timespec = {
+                start:     0
+                end:       50
+                dt:        .1
+                save_step: 1
+        }
+
+        // 7% growth is a 10 year doubling time.
+        rate_table = [(0, .14), (50, .07)]
+
+	rate = rate_table[time]
+
+        in flow = rate * accum
+
+        accum stock = {
+                initial: 200
+                inflow: in
+        }
+}
