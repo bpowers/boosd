@@ -83,9 +83,21 @@ type BaseSim struct {
 	CalcStocks  func(c Coordinator, dt float64)
 }
 
+func max(a, b int64) int64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
 func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table) {
 	s.Parent = m
 	s.Time = ts
+
+	if ts.SaveStep == 0 {
+		panic("can't have 0 SaveStep")
+	}
 
 	capSeries := int((ts.End-ts.Start)/ts.SaveStep) + 1
 	s.Series = make([]Data, 0, capSeries)
@@ -93,8 +105,8 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table) {
 
 	s.Tables = tables
 
-	// round to the nearest integer
-	s.saveEvery = int64(ts.SaveStep/ts.DT + .5)
+	// round to the nearest integer, but make sure we're non-zero
+	s.saveEvery = max(int64(ts.SaveStep/ts.DT + .5), 1)
 
 	s.Curr = Data{}
 	s.Next = Data{}
