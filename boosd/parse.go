@@ -545,7 +545,7 @@ boosddefault:
 	case 23:
 		//line parse.y:175
 		{
-			boosdVAL.decl = &VarDecl{Name: boosdS[boosdpt-1].id, Units: boosdS[boosdpt-0].expr}
+			boosdVAL.decl = &VarDecl{Name: boosdS[boosdpt-1].id, Type: NewIdent("aux"), Units: boosdS[boosdpt-0].expr}
 		}
 	case 24:
 		//line parse.y:179

@@ -173,7 +173,7 @@ stmt:	var_decl ';'
 
 var_decl:	ident opt_kind
 	{
-		$$ = &VarDecl{Name:$1, Units:$2}
+		$$ = &VarDecl{Name:$1, Type:NewIdent("aux"), Units:$2}
 	}
 |	ident ident opt_kind
 	{
