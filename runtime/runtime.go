@@ -18,12 +18,17 @@ type chanReq struct {
 
 // a coordinator is the syncronization point between model instances
 // and provider of gaming variables.
-type Coordinator struct {
+type Coordinator interface {
+	Data(s Sim, name string) float64
+	Close() error
+}
+
+type coordinator struct {
 	req  chan chanReq
 	stop chan struct{}
 }
 
-func (c *Coordinator) worker() {
+func (c *coordinator) worker() {
 outer:
 	for {
 		select {
@@ -36,19 +41,21 @@ outer:
 	}
 }
 
-func (c *Coordinator) Data(s Sim, name string) float64 {
+func (c *coordinator) Data(s Sim, name string) float64 {
 	result := make(chan float64)
 	c.req <- chanReq{s, name, result}
 	return <-result
 }
 
-func (c *Coordinator) Close() {
+func (c *coordinator) Close() error {
 	close(c.stop)
+	return nil
 }
 
 func NewCoordinator() Coordinator {
-	c := Coordinator{
-		req: make(chan chanReq),
+	c := &coordinator{
+		req:  make(chan chanReq),
+		stop: make(chan struct{}),
 	}
 	go c.worker()
 	return c
@@ -68,7 +75,7 @@ type Sim interface {
 
 type Model interface {
 	Name() string
-	NewSim(iName string) Sim
+	NewSim(iName string, c Coordinator) Sim
 	Attr(name string) interface{}
 	VarNames() []string
 	Var(name string) (Var, bool)
@@ -78,7 +85,8 @@ type Model interface {
 
 // Init initializes the boosd runtime.
 func Main(m Model) {
-	sim := m.NewSim("main")
+	coord := NewCoordinator()
+	sim := m.NewSim("main", coord)
 
 	if err := sim.RunToEnd(); err != nil {
 		log.Fatalf("sim.RunToEnd: %s", err)

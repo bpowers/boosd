@@ -62,6 +62,8 @@ type BaseSim struct {
 	Parent Model
 	Time   Timespec
 
+	Coord Coordinator
+
 	InstanceName string
 	VarNames     map[string]string
 	SubSims      map[string]BaseSim
@@ -78,11 +80,12 @@ type BaseSim struct {
 	stepNum   int64
 
 	// Calc{Flows,Stocks} are used by the RunTo* functions
-	CalcInitial func(c Coordinator, dt float64)
-	CalcFlows   func(c Coordinator, dt float64)
-	CalcStocks  func(c Coordinator, dt float64)
+	CalcInitial func(dt float64)
+	CalcFlows   func(dt float64)
+	CalcStocks  func(dt float64)
 }
 
+// max returns the int64 max of two numbers
 func max(a, b int64) int64 {
 	if a > b {
 		return a
@@ -120,15 +123,13 @@ func (s *BaseSim) Model() Model {
 
 // RunTo currently implements the Euler method
 func (s *BaseSim) RunTo(t float64) error {
-	c := NewCoordinator()
-
 	if s.Curr["time"] == s.Time.Start {
-		s.CalcInitial(c, s.Time.DT)
+		s.CalcInitial(s.Time.DT)
 	}
 
 	for s.Curr["time"] <= t {
-		s.CalcFlows(c, s.Time.DT)
-		s.CalcStocks(c, s.Time.DT)
+		s.CalcFlows(s.Time.DT)
+		s.CalcStocks(s.Time.DT)
 
 		if s.stepNum%s.saveEvery == 0 {
 			s.timeSeries = append(s.timeSeries, s.Curr["time"])

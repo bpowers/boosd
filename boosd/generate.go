@@ -13,28 +13,27 @@ import (
 	"go/token"
 	"log"
 	"strconv"
+	"strings"
 	"text/template"
 	"unicode"
 )
 
 const fileTmpl = `
 {{define "modelTmpl"}}
-var (
-	m{{$.CamelName}} = mdl{{$.CamelName}}{
-		runtime.BaseModel{
-			MName: "{{$.Name}}",
-			Vars: runtime.VarMap{ {{range $.Vars}}
-				"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
-			},
-			Defaults: runtime.DefaultMap{ {{range $n, $_ := $.Initials}}
-				"{{$n}}": {{.}}, {{end}}
-			},
-			Tables: map[string]runtime.Table{ {{range $n, $_ := $.Tables}}
-				"{{$n}}": {{printf "%#v" .}}, {{end}}
-			},
+var m{{$.CamelName}} = mdl{{$.CamelName}}{
+	runtime.BaseModel{
+		MName: "{{$.Name}}",
+		Vars: runtime.VarMap{ {{range $.Vars}}
+			"{{.Name}}": runtime.Var{"{{.Name}}", runtime.{{.Type}}},{{end}}
 		},
-	}
-)
+		Defaults: runtime.DefaultMap{ {{range $n, $_ := $.Initials}}
+			{{if simple . }}"{{$n}}": {{.}}, {{end}}{{end}}
+		},
+		Tables: map[string]runtime.Table{ {{range $n, $_ := $.Tables}}
+			"{{$n}}": {{printf "%#v" .}}, {{end}}
+		},
+	},
+}
 
 type sim{{$.CamelName}} struct {
 	runtime.BaseSim
@@ -44,19 +43,25 @@ type mdl{{$.CamelName}} struct {
 	runtime.BaseModel
 }
 
-func (s *sim{{$.CamelName}}) calcInitial(c runtime.Coordinator, dt float64) { {{range $n, $_ := $.Initials}}
-	s.Curr["{{$n}}"] = c.Data(s, "{{$n}}"){{end}}
+func (s *sim{{$.CamelName}}) calcInitial(dt float64) { {{if $.Initials }}
+	c := s.Coord
+	{{end}} {{range $n, $_ := $.Initials}}
+	s.Curr["{{$n}}"] = {{if simple .}}c.Data(s, "{{$n}}"){{else}}{{.}}{{end}}{{end}}
 }
 
-func (s *sim{{$.CamelName}}) calcFlows(c runtime.Coordinator, dt float64) { {{range $.Equations}}
+func (s *sim{{$.CamelName}}) calcFlows(dt float64) { {{if $.UseCoordFlows }}
+	c := s.Coord
+	{{end}} {{range $.Equations}}
 	{{.}}{{end}}
 }
 
-func (s *sim{{$.CamelName}}) calcStocks(c runtime.Coordinator, dt float64) { {{range $.Stocks}}
+func (s *sim{{$.CamelName}}) calcStocks(dt float64) { {{if $.UseCoordStocks }}
+	c := s.Coord
+	{{end}} {{range $.Stocks}}
 	{{.}}{{end}}
 }
 
-func (m *mdl{{$.CamelName}}) NewSim(name string) runtime.Sim {
+func (m *mdl{{$.CamelName}}) NewSim(name string, c runtime.Coordinator) runtime.Sim {
 	ts := runtime.Timespec{
 		Start:    {{$.Time.Start}},
 		End:      {{$.Time.End}},
@@ -66,6 +71,9 @@ func (m *mdl{{$.CamelName}}) NewSim(name string) runtime.Sim {
 
 	s := new(sim{{$.CamelName}})
 	s.InstanceName = name
+	s.Parent = m
+	s.Coord = c
+
 	s.Init(m, ts, m.Tables)
 
 	s.CalcInitial = s.calcInitial
@@ -99,6 +107,8 @@ type genModel struct {
 	Stocks    []string
 	Initials  map[string]string
 	Abstract  bool
+	UseCoordFlows bool
+	UseCoordStocks bool
 }
 
 type generator struct {
@@ -291,6 +301,7 @@ func (g *generator) expr(name string, expr Expr) {
 		if isConst(expr) {
 			g.initial(name, expr)
 			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, name)
+			g.curr.UseCoordFlows = true
 		} else {
 			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
@@ -438,6 +449,10 @@ func (g *generator) model(m *ModelDecl) error {
 	return nil
 }
 
+func tmplSimple(eqn string) bool {
+	return !strings.HasPrefix(eqn, `s.Curr["`)
+}
+
 func (g *generator) file(f *File) ([]byte, error) {
 	for _, d := range f.Decls {
 		md, ok := d.(*ModelDecl)
@@ -452,6 +467,7 @@ func (g *generator) file(f *File) ([]byte, error) {
 
 	var buf bytes.Buffer
 	tmpl := template.New("model.go")
+	tmpl = tmpl.Funcs(template.FuncMap{"simple": tmplSimple})
 	if _, err := tmpl.Parse(fileTmpl); err != nil {
 		panic(fmt.Sprintf("Parse(modelTmpl): %s", err))
 	}
