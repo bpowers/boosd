@@ -119,15 +119,22 @@ type generator struct {
 func (g *generator) declList(list []Decl) {
 }
 
+// stripUnits returns the child of rhs if rhs is a UnitExpr, and
+// returns rhs otherwise.
+func stripUnits(rhs Expr) Expr {
+	switch r := rhs.(type) {
+	case *UnitExpr:
+		rhs = r.X
+	}
+	return rhs
+}
+
 // constEval returns the float64 value represented by Expr, or an
 // error if it can't be evaluated at compile time.
 func constEval(e Expr) (v float64, err error) {
 	// if we're wrapped in units, remove them.  Unit safety is a
 	// separate issue.
-	switch r := e.(type) {
-	case *UnitExpr:
-		e = r.X
-	}
+	e = stripUnits(e)
 	basic, ok := e.(*BasicLit)
 	if !ok {
 		err = fmt.Errorf("val %T not BasicLit", e)
@@ -194,11 +201,8 @@ func (g *generator) initial(name string, expr Expr) (err error) {
 		init := fmt.Sprintf(`%f`, val)
 		g.curr.Initials[name] = init
 	} else {
-		unitExpr, ok := expr.(*UnitExpr)
-		if !ok {
-			return fmt.Errorf("initial(%s): not unitexpr", name)
-		}
-		switch e := unitExpr.X.(type) {
+		expr = stripUnits(expr)
+		switch e := expr.(type) {
 		case *RefExpr:
 			if _, ok := g.curr.Vars[e.Ident.Name]; ok {
 				init := fmt.Sprintf(`s.Curr["%s"]`, e.Name)
@@ -210,7 +214,7 @@ func (g *generator) initial(name string, expr Expr) (err error) {
 			}
 		default:
 			err = fmt.Errorf("initial(%s): non-const %v (%T)",
-				name, unitExpr.X, unitExpr.X)
+				name, expr, expr)
 		}
 	}
 	return
@@ -254,10 +258,7 @@ func (g *generator) table(name string, e Expr) error {
 
 	// if we're wrapped in units, remove them.  Unit safety is a
 	// separate issue.
-	switch r := e.(type) {
-	case *UnitExpr:
-		e = r.X
-	}
+	e = stripUnits(e)
 
 	switch r := e.(type) {
 	case *TableExpr:
@@ -303,6 +304,7 @@ func (g *generator) expr(name string, expr Expr) {
 			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, name)
 			g.curr.UseCoordFlows = true
 		} else {
+			log.Printf("%s - expr1 %T (%#v)", name, expr, expr)
 			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
 	case runtime.TyTable:
@@ -310,6 +312,7 @@ func (g *generator) expr(name string, expr Expr) {
 			log.Printf("table(%s): %s", name, err)
 		}
 	default:
+		log.Printf("%s - expr2 %T (%#v)", name, expr, expr)
 		eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 	}
 	if len(eqn) > 0 {
@@ -348,6 +351,13 @@ func (g *generator) stmt(s Stmt) error {
 			return err
 		}
 	case *DeclStmt:
+		v, ok := g.curr.Vars[ss.Decl.Name.Name]
+		if !ok {
+			return fmt.Errorf("assign: unknown v '%s'?", ss.Decl.Name.Name)
+		}
+		eqn := fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, v.Name, v.Name)
+		g.curr.Equations = append(g.curr.Equations, eqn)
+		g.curr.Initials[v.Name] = eqn
 	default:
 		log.Printf("stmt(%T): unimplemented - %T", s, s)
 	}
@@ -371,10 +381,7 @@ func resolveType(d *VarDecl, rhs Expr) error {
 
 	// if we're wrapped in units, remove them.  Unit safety is a
 	// separate issue.
-	switch r := rhs.(type) {
-	case *UnitExpr:
-		rhs = r.X
-	}
+	rhs = stripUnits(rhs)
 
 	switch r := rhs.(type) {
 	case *TableExpr:
