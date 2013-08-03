@@ -246,6 +246,7 @@ var tyNames = map[string]VarType{
 func TypeForName(n string) VarType {
 	ty, ok := tyNames[n]
 	if !ok {
+		fmt.Printf("unknown runtime type '%s'\n", n)
 		ty = TyUnknown
 	}
 	return ty

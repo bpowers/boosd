@@ -272,6 +272,10 @@ type (
 		Pairs  []*PairExpr // function arguments; or nil
 		Rbrack token.Pos
 	}
+
+	TableForwardExpr struct {
+		Ys []*BasicLit
+	}
 )
 
 // A type is represented by a tree consisting of one
