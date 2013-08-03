@@ -14,6 +14,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"text/template"
 	"unicode"
 )
@@ -119,6 +120,16 @@ type generator struct {
 func (g *generator) declList(list []Decl) {
 }
 
+var tmpCount uint32
+// tmpName returns a unique temporary name that begins with the format
+// ".${base}_"
+func tmpName(base string) string {
+	i := atomic.AddUint32(&tmpCount, 1)
+	tmpCount++
+
+	return fmt.Sprintf(".%s_%d", base, i)
+}
+
 // stripUnits returns the child of rhs if rhs is a UnitExpr, and
 // returns rhs otherwise.
 func stripUnits(rhs Expr) Expr {
@@ -141,6 +152,14 @@ func constEval(e Expr) (v float64, err error) {
 		return
 	}
 	return strconv.ParseFloat(basic.Value, 64)
+}
+
+func identString(e Expr) (s string, ok bool) {
+	var id *Ident
+	if id, ok = e.(*Ident); ok {
+		s = id.Name
+	}
+	return
 }
 
 func isConst(e Expr) bool {
@@ -305,6 +324,14 @@ func (g *generator) expr(name string, expr Expr) {
 			g.curr.UseCoordFlows = true
 		} else if e, ok := expr.(*CompositeLit); ok {
 			log.Printf("%s - composit lit %T (%#v)", name, e, e)
+			tyName, ok := identString(e.Type)
+			if !ok {
+				log.Printf("composit lit with unknown type")
+				return
+			}
+			instanceName := tmpName(tyName)
+			// TODO: instantiate model instance
+			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, instanceName)
 		} else {
 			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
