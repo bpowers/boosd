@@ -303,8 +303,9 @@ func (g *generator) expr(name string, expr Expr) {
 			g.initial(name, expr)
 			eqn = fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, name, name)
 			g.curr.UseCoordFlows = true
+		} else if e, ok := expr.(*CompositeLit); ok {
+			log.Printf("%s - composit lit %T (%#v)", name, e, e)
 		} else {
-			log.Printf("%s - expr1 %T (%#v)", name, expr, expr)
 			eqn = fmt.Sprintf(`s.Curr["%s"] = %s`, name, expr)
 		}
 	case runtime.TyTable:

@@ -1,6 +1,6 @@
 import "kinds"
 
-Smooth model {
+Smooth1 model {
         variable
         delay
         initial
@@ -35,5 +35,9 @@ main model {
                 initial: initial_population
         }
 
-        avg_population = Smooth(population, delay, initial_population)
+        avg_population = Smooth1{
+		variable: population
+		delay:    delay
+		initial:  initial_population
+	}
 }
