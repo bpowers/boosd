@@ -73,13 +73,9 @@ func main() {
 		log.Fatalf("%s", err)
 	}
 
-	exePath, err := compileAndLink(goSource)
+	err = compileAndLink(goSource, outPath)
 	if err != nil {
 		log.Fatalf("compileAndLink('%s')", goSource, err)
-	}
-
-	if err = copyFile(exePath, outPath); err != nil {
-		log.Fatalf("copyFile('%s', '%s'): %s", exePath, outPath, err)
 	}
 }
 
@@ -170,57 +166,65 @@ func mkdir(perm os.FileMode, components ...string) error {
 
 // compileAndLink compiles and links the given source, returning a
 // path to the given binary, or an error.
-func compileAndLink(src []byte) (string, error) {
-	workDir, err := ioutil.TempDir("", "boost_temp")
+func compileAndLink(src []byte, outPath string) error {
+	workDir, err := ioutil.TempDir("", "boosd_temp")
 	if err != nil {
-		return "", fmt.Errorf("ioutil.TempDir: %s", err)
+		return fmt.Errorf("ioutil.TempDir: %s", err)
 	}
 
 	if err = mkdir(0700, workDir, ".gogo"); err != nil {
-		return "", err
+		return err
+	}
+
+	if err = mkdir(0700, workDir, "bin"); err != nil {
+		return err
 	}
 
 	if err = mkdir(0700, workDir, "src"); err != nil {
-		return "", err
+		return err
 	}
 
-	if err = mkdir(0700, workDir, "src", "model.out"); err != nil {
-		return "", err
+	if err = mkdir(0700, workDir, "src", "main"); err != nil {
+		return err
 	}
 
 	proj, err := project.NewProject(workDir)
 	if err != nil {
-		return "", fmt.Errorf("NewProject(%s): %s", workDir, err)
+		return fmt.Errorf("NewProject(%s): %s", workDir, err)
 	}
 
 	ctx, err := build.NewDefaultContext(proj)
 	if err != nil {
-		return "", fmt.Errorf("NewDefaultContext(): %s", err)
+		return fmt.Errorf("NewDefaultContext(): %s", err)
 	}
 	defer ctx.Destroy()
 
 	if err = os.Symlink(GithubDir, path.Join(workDir, "src", "github.com")); err != nil {
-		return "", fmt.Errorf("symlink: %s", err)
+		return fmt.Errorf("symlink: %s", err)
 	}
 
-	srcPath := path.Join(workDir, "src", "model.out", "main.go")
+	srcPath := path.Join(workDir, "src", "main", "main.go")
 	f, err := os.Create(srcPath)
 	if err != nil {
-		return "", fmt.Errorf("Create(%s): %s", srcPath, err)
+		return fmt.Errorf("Create(%s): %s", srcPath, err)
 	}
 	f.Write(src)
 	// this Close is not deferred so that we're sure the contents are flushed to
 	// the kernel before buid.Build is called.
 	f.Close()
 
-	goPkg, err := ctx.ResolvePackage(runtime.GOOS, runtime.GOARCH, "model.out").Result()
+	goPkg, err := ctx.ResolvePackage(runtime.GOOS, runtime.GOARCH, "main").Result()
 	if err != nil {
-		return "", fmt.Errorf("ResolvePackage(model.out): %s", err)
+		return fmt.Errorf("ResolvePackage(main): %s", err)
 	}
 
 	if err = build.Build(ctx, goPkg).Result(); err != nil {
-		return "", fmt.Errorf("Build: %s", err)
+		return fmt.Errorf("Build: %s", err)
 	}
 
-	return path.Join(workDir, "bin", "linux", "amd64", "model.out"), nil
+	exePath := path.Join(ctx.Bindir(), "main")
+	if err = copyFile(exePath, outPath); err != nil {
+		return fmt.Errorf("copyFile('%s', '%s'): %s", exePath, outPath, err)
+	}
+	return nil
 }
