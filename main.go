@@ -10,8 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bpowers/boosd/boosd"
-	"github.com/davecheney/gogo"
 	"github.com/davecheney/gogo/build"
+	"github.com/davecheney/gogo/project"
 	"go/ast"
 	"go/format"
 	"go/token"
@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 )
 
 const usage = `Usage: %s [OPTION...]
@@ -187,12 +188,12 @@ func compileAndLink(src []byte) (string, error) {
 		return "", err
 	}
 
-	proj, err := gogo.NewProject(workDir)
+	proj, err := project.NewProject(workDir)
 	if err != nil {
 		return "", fmt.Errorf("NewProject(%s): %s", workDir, err)
 	}
 
-	ctx, err := gogo.NewDefaultContext(proj)
+	ctx, err := build.NewDefaultContext(proj)
 	if err != nil {
 		return "", fmt.Errorf("NewDefaultContext(): %s", err)
 	}
@@ -212,7 +213,7 @@ func compileAndLink(src []byte) (string, error) {
 	// the kernel before buid.Build is called.
 	f.Close()
 
-	goPkg, err := ctx.ResolvePackage("model.out")
+	goPkg, err := ctx.ResolvePackage(runtime.GOOS, runtime.GOARCH, "model.out").Result()
 	if err != nil {
 		return "", fmt.Errorf("ResolvePackage(model.out): %s", err)
 	}
