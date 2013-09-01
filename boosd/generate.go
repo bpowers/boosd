@@ -99,16 +99,16 @@ func main() {
 `
 
 type genModel struct {
-	Name      string
-	CamelName string // camelcased
-	Vars      map[string]runtime.Var
-	Tables    map[string]runtime.Table
-	Time      runtime.Timespec
-	Equations []string
-	Stocks    []string
-	Initials  map[string]string
-	Abstract  bool
-	UseCoordFlows bool
+	Name           string
+	CamelName      string // camelcased
+	Vars           map[string]runtime.Var
+	Tables         map[string]runtime.Table
+	Time           runtime.Timespec
+	Equations      []string
+	Stocks         []string
+	Initials       map[string]string
+	Abstract       bool
+	UseCoordFlows  bool
 	UseCoordStocks bool
 }
 
@@ -121,6 +121,7 @@ func (g *generator) declList(list []Decl) {
 }
 
 var tmpCount uint32
+
 // tmpName returns a unique temporary name that begins with the format
 // ".${base}_"
 func tmpName(base string) string {

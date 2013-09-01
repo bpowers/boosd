@@ -109,7 +109,7 @@ func (s *BaseSim) Init(m Model, ts Timespec, tables map[string]Table) {
 	s.Tables = tables
 
 	// round to the nearest integer, but make sure we're non-zero
-	s.saveEvery = max(int64(ts.SaveStep/ts.DT + .5), 1)
+	s.saveEvery = max(int64(ts.SaveStep/ts.DT+.5), 1)
 
 	s.Curr = Data{}
 	s.Next = Data{}
