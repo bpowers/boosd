@@ -385,6 +385,7 @@ func (g *generator) stmt(s Stmt) error {
 			return fmt.Errorf("assign: unknown v '%s'?", ss.Decl.Name.Name)
 		}
 		eqn := fmt.Sprintf(`s.Curr["%s"] = c.Data(s, "%s")`, v.Name, v.Name)
+		g.curr.UseCoordFlows = true
 		g.curr.Equations = append(g.curr.Equations, eqn)
 		g.curr.Initials[v.Name] = eqn
 	default:
