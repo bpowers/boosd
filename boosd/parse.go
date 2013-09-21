@@ -270,7 +270,7 @@ out:
 		c = boosdTok2[1] /* unknown char */
 	}
 	if boosdDebug >= 3 {
-		__yyfmt__.Printf("lex %U %s\n", uint(char), boosdTokname(c))
+		__yyfmt__.Printf("lex %s(%d)\n", boosdTokname(c), uint(char))
 	}
 	return c
 }
@@ -367,7 +367,7 @@ boosddefault:
 			Nerrs++
 			if boosdDebug >= 1 {
 				__yyfmt__.Printf("%s", boosdStatname(boosdstate))
-				__yyfmt__.Printf("saw %s\n", boosdTokname(boosdchar))
+				__yyfmt__.Printf(" saw %s\n", boosdTokname(boosdchar))
 			}
 			fallthrough
 
