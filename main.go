@@ -65,6 +65,11 @@ func main() {
 			log.Fatal("Open:", err)
 		}
 		defer f.Close()
+
+		if fi, err := f.Stat(); err != nil || fi.IsDir() {
+			log.Fatalf("err(%s) or %s IsDir", err, filename)
+		}
+
 		in = bufio.NewReader(f)
 	}
 
