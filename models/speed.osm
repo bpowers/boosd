@@ -1,0 +1,16 @@
+// exponential growth
+main model {
+        timespec = {
+                start:     0
+                end:       10000000
+                dt:        1
+                save_step: 1
+        }
+
+        in flow = 1
+
+        accum stock = {
+                initial: 1
+                inflow: in
+        }
+}
